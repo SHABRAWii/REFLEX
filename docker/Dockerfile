@@ -79,6 +79,8 @@ RUN rosdep update
 # Quality-of-life + REFLEX env
 # -------------------------
 COPY docker/profile.sh /etc/profile.d/reflex_env.sh
+# Ensure REFLEX profile loads in interactive shells (bash -i)
+RUN echo '[[ -f /etc/profile.d/reflex_env.sh ]] && source /etc/profile.d/reflex_env.sh' >> /etc/bash.bashrc
 COPY docker/entrypoint.sh /reflex_entrypoint.sh
 RUN chmod +x /reflex_entrypoint.sh && chmod a+r /etc/profile.d/reflex_env.sh
 
