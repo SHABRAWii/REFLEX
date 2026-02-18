@@ -76,6 +76,7 @@ rocker \
 # 4) Start persistent container detached
 echo "Starting REFLEX container in background: ${CONTAINER_NAME}"
 
+# Keep the container alive; users attach with docker exec.
 docker run -d \
   --name "${CONTAINER_NAME}" \
   --hostname "${HOSTNAME_NAME}" \
@@ -88,7 +89,6 @@ docker run -d \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   -v /etc/localtime:/etc/localtime:ro \
   "${WRAPPER_IMAGE}" \
-  # Keep the container alive; users attach with docker exec.
   sleep infinity >/dev/null
 
 echo "✅ REFLEX is running: ${CONTAINER_NAME}"
