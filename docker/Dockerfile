@@ -68,6 +68,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-${ROS_DISTRO}-ros-gz \
     ros-${ROS_DISTRO}-ros2-control \
     ros-${ROS_DISTRO}-ros2-controllers \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    build-essential \
+    cmake \
+    pkg-config \
     gz-harmonic \
     && rm -rf /var/lib/apt/lists/*
 
