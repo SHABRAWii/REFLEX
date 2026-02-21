@@ -47,6 +47,10 @@ reflex_src() {
   fi
 }
 
+reflix_build() {
+  cd "${REFLEX_WS}/ros_ws" && colcon build --symlink-install
+}
+
 reflex_help() {
   cat <<EOF
 REFLEX (container) helpers:
