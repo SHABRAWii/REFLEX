@@ -28,6 +28,8 @@ setup(
     entry_points={
         'console_scripts': [
           'wheel_velocity_pid = reflex_control.wheel_velocity_pid:main',
+          'reflex_balance_pid = reflex_control.balance_pid:main',
+          'reflex_status_dashboard = reflex_control.status_dashboard:main',
         ],
     },
 )
