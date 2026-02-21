@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="reflex_gazebo" params="prefix">
+
+    <!-- Optional: set wheel friction (tune later) -->
+    <gazebo reference="${prefix}Left_Wheel">
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+
+    <gazebo reference="${prefix}Right_Wheel">
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+
+    <!-- ros2_control definition -->
+    <ros2_control name="ReflexSystem" type="system">
+      <hardware>
+        <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+      </hardware>
+
+      <!-- Left wheel joint -->
+      <joint name="${prefix}Left_Wheel_Joint">
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <!-- Right wheel joint -->
+      <joint name="${prefix}Right_Wheel_Joint">
+        <command_interface name="velocity"/>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+    </ros2_control>
+
+    <!-- Gazebo plugin that exposes ros2_control to Gazebo Harmonic -->
+    <gazebo>
+      <plugin filename="libgz_ros2_control-system.so" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <!-- This YAML is loaded by controller_manager later -->
+        <parameters>$(find reflex_gazebo)/config/controllers.yaml</parameters>
+      </plugin>
+    </gazebo>
+
+  </xacro:macro>
+
+</robot>

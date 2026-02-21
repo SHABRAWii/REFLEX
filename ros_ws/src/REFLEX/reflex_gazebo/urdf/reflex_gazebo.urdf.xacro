@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="reflex">
+
+  <xacro:arg name="prefix" default=""/>
+  <xacro:arg name="namespace" default="reflex"/>
+
+  <xacro:property name="prefix" value="$(arg prefix)" />
+  <xacro:property name="namespace" value="$(arg namespace)" scope="global" />
+
+  <!-- This file ALREADY builds the robot (base + legs + wheels) -->
+  <xacro:include filename="$(find reflex_descriptions)/urdf/reflex.urdf.xacro"/>
+
+  <!-- Gazebo additions (ros2_control + plugins) -->
+  <xacro:include filename="$(find reflex_gazebo)/urdf/reflex_gazebo.xacro"/>
+
+  <!-- Attach gazebo plugins + ros2_control (robot is already created above) -->
+  <xacro:reflex_gazebo prefix="${prefix}" />
+
+  <!-- Optional: TF / Joint states from Gazebo -->
+  <gazebo>
+    <plugin filename="libgz-sim-pose-publisher-system.so"
+            name="gz::sim::systems::PosePublisher">
+      <publish_link_pose>false</publish_link_pose>
+      <publish_sensor_pose>true</publish_sensor_pose>
+      <publish_collision_pose>false</publish_collision_pose>
+      <publish_visual_pose>false</publish_visual_pose>
+      <publish_nested_model_pose>false</publish_nested_model_pose>
+      <publish_model_pose>false</publish_model_pose>
+      <use_pose_vector_msg>true</use_pose_vector_msg>
+      <static_publisher>false</static_publisher>
+      <static_update_frequency>1</static_update_frequency>
+    </plugin>
+
+    <plugin filename="gz-sim-joint-state-publisher-system"
+            name="gz::sim::systems::JointStatePublisher"/>
+  </gazebo>
+
+</robot>
