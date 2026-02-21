@@ -10,6 +10,7 @@ from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import Imu, JointState
 from std_msgs.msg import Float64MultiArray
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy, HistoryPolicy
 
 def clamp(x: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, x))
@@ -173,13 +174,16 @@ class ReflexBalancePID(Node):
         self.last_time = self.get_clock().now()
 
         # subs/pubs
-        self.sub_cmd = self.create_subscription(TwistStamped, '/diff_drive_controller/cmd_vel', self.on_cmd, 10)
+        qos_be = QoSProfile(
+            history=HistoryPolicy.KEEP_LAST, depth=10,
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=DurabilityPolicy.VOLATILE
+        )
+        self.pub_cmd = self.create_publisher(TwistStamped, '/diff_drive_controller/cmd_vel', qos_be)
         self.sub_js = self.create_subscription(JointState, '/joint_states', self.on_joint_states, qos_profile_sensor_data)
         self.sub_imu = self.create_subscription(Imu, '/imu', self.on_imu, qos_profile_sensor_data)
 
-        self.pub_cmd = self.create_publisher(Float64MultiArray, '/wheel_velocity_controller/commands', 10)
         self.pub_debug = self.create_publisher(Float64MultiArray, '/reflex_balance/debug', 10)
-
         self.timer = self.create_timer(1.0 / self.inner_rate, self.on_timer)
 
         self.get_logger().info(
@@ -187,7 +191,7 @@ class ReflexBalancePID(Node):
             f"inner={self.inner_rate}Hz outer≈{self.outer_rate}Hz"
         )
 
-    def on_cmd(self, msg: Twist):
+    def on_cmd(self, msg: TwistStamped):
         self.v_set = float(msg.linear.x)       # m/s
         self.yaw_rate_set = float(msg.angular.z)  # rad/s
 
@@ -270,9 +274,14 @@ class ReflexBalancePID(Node):
                     float(u), float(wL_cmd), float(wR_cmd)]
         self.pub_debug.publish(dbg)
 
-        out = Float64MultiArray()
-        out.data = [wL_cmd, wR_cmd]
-        self.pub_cmd.publish(out)
+        v_cmd = self.r * 0.5 * (wL_cmd + wR_cmd)
+        yaw_cmd = (self.r / self.L) * (wR_cmd - wL_cmd)
+
+        cmd = TwistStamped()
+        cmd.header.stamp = self.get_clock().now().to_msg()
+        cmd.twist.linear.x = float(v_cmd)
+        cmd.twist.angular.z = float(yaw_cmd)
+        self.pub_cmd.publish(cmd)
 
 
 def main():
