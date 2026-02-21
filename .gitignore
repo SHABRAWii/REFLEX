@@ -1,0 +1,16 @@
+# Ignore everything inside src
+ros_ws/src/*
+
+# But allow these two packages
+!ros_ws/src/REFLEX
+
+# And allow everything inside them
+!ros_ws/src/REFLEX/**
+
+# Ignore colcon outputs
+ros_ws/build/
+ros_ws/install/
+ros_ws/log/
+
+# Ignore Python build artifacts
+__pycache__/
