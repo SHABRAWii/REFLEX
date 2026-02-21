@@ -105,11 +105,11 @@
     </link>
 
     <!-- Right Wheel joint -->
-    <joint name="${prefix}Right_Wheel_Link" type="continuous">
+    <joint name="${prefix}Right_Wheel_Joint" type="continuous">
       <origin xyz="0.04 -0.2 0" rpy="1.5708 -0.91317 1.5708"/>
       <parent link="${prefix}Right_Knee"/>
       <child link="${prefix}Right_Wheel"/>
-      <axis xyz="0 0 1"/>
+      <axis xyz="0 0 -1"/>
     </joint>
 
   </xacro:macro>
