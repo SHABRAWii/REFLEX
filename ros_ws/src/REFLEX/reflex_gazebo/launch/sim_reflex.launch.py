@@ -1,5 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, TimerAction
+from launch.conditions import LaunchConfigurationEquals, LaunchConfigurationNotEquals
 from launch.substitutions import LaunchConfiguration, Command, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -32,32 +33,45 @@ def generate_launch_description():
         )
     }
 
-    # Gazebo command
-    gz_cmd = ['gz', 'sim']
-    gz_args = ['-r', world]
-    # Note: keep GUI enabled for now. If you want true headless, we can add conditionals.
+    world_path = PathJoinSubstitution([pkg_share, 'worlds', world])
 
     return LaunchDescription([
         # -------- Launch Arguments --------
         DeclareLaunchArgument('world', default_value='empty.sdf'),
         DeclareLaunchArgument('headless', default_value='False'),
 
-        # Spawn pose defaults (change these as you like)
         DeclareLaunchArgument('spawn_name', default_value='reflex'),
         DeclareLaunchArgument('spawn_x', default_value='0.0'),
         DeclareLaunchArgument('spawn_y', default_value='0.0'),
-        DeclareLaunchArgument('spawn_z', default_value='0.8'),      # <-- higher Z by default
+        DeclareLaunchArgument('spawn_z', default_value='0.8'),
         DeclareLaunchArgument('spawn_roll', default_value='0.0'),
         DeclareLaunchArgument('spawn_pitch', default_value='0.0'),
         DeclareLaunchArgument('spawn_yaw', default_value='0.0'),
 
-        # Delay controller loading until controller_manager is up
         DeclareLaunchArgument('controller_load_delay', default_value='3.0'),
 
         # -------- Start Gazebo --------
         ExecuteProcess(
-            cmd=gz_cmd + gz_args,
-            output='screen'
+            cmd=['gz', 'sim', '-r', world_path],
+            output='screen',
+            condition=LaunchConfigurationNotEquals('headless', 'True'),
+        ),
+        ExecuteProcess(
+            cmd=['gz', 'sim', '-r', '-s', world_path],
+            output='screen',
+            condition=LaunchConfigurationEquals('headless', 'True'),
+        ),
+
+        # -------- Bridge clock early (important) --------
+        Node(
+            package='ros_gz_bridge',
+            executable='parameter_bridge',
+            arguments=[
+                '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+                '/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
+            ],
+            output='screen',
+            parameters=[{'use_sim_time': True}],
         ),
 
         # -------- robot_state_publisher --------
@@ -84,13 +98,17 @@ def generate_launch_description():
                 '-Y', spawn_yaw,
             ]
         ),
-        # -------- Spawn in Gazebo --------
-        Node(
-            package='ros_gz_bridge',
-            executable='parameter_bridge',
-            arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
-            output='screen',
-            parameters=[{'use_sim_time': True}],
+
+        # -------- Force controller_manager to use sim time BEFORE loading controllers --------
+        # Give gz_ros2_control time to bring up /controller_manager, then set param.
+        TimerAction(
+            period=1.5,
+            actions=[
+                ExecuteProcess(
+                    cmd=['ros2', 'param', 'set', '/controller_manager', 'use_sim_time', 'true'],
+                    output='screen'
+                ),
+            ]
         ),
 
         # -------- Load controllers (after a delay) --------
@@ -104,7 +122,7 @@ def generate_launch_description():
                 ),
                 ExecuteProcess(
                     cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-                         'wheel_velocity_controller'],
+                        'diff_drive_controller'],
                     output='screen'
                 ),
             ]

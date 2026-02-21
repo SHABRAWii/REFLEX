@@ -14,6 +14,9 @@ install(DIRECTORY launch/
 install(DIRECTORY urdf/
   DESTINATION share/${PROJECT_NAME}/urdf)
 
+install(DIRECTORY worlds/
+  DESTINATION share/${PROJECT_NAME}/worlds)
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
