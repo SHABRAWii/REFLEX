@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="reflex_base" params="prefix">
+
+    <link name="${prefix}base_link">
+      <inertial>
+        <origin xyz="2.92339840704624E-06 0.195675441175354 -0.0667288023592446" rpy="0 0 0"/>
+        <mass value="4.45917765815169"/>
+        <inertia
+          ixx="0.0475762402880365" ixy="3.04028327588199E-06" ixz="-2.90552883862899E-06"
+          iyy="0.0259424865395697" iyz="-5.46372140224359E-05"
+          izz="0.0523223046501137"/>
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <!-- Update path to your package layout -->
+          <mesh filename="$(find reflex_descriptions)/models/Main.STL"/>
+        </geometry>
+        <material name="reflex_grey">
+          <color rgba="0.698039215686274 0.698039215686274 0.698039215686274 1"/>
+        </material>
+      </visual>
+
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="$(find reflex_descriptions)/models/Main.STL"/>
+        </geometry>
+      </collision>
+    </link>
+
+  </xacro:macro>
+
+</robot>

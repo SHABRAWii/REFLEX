@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="reflex">
+
+  <!-- Arguments -->
+  <xacro:arg name="prefix" default=""/>
+  <xacro:property name="prefix" value="$(arg prefix)" />
+
+  <!-- Include components -->
+  <xacro:include filename="$(find reflex_descriptions)/urdf/components/base.xacro" />
+  <xacro:include filename="$(find reflex_descriptions)/urdf/components/left_leg.xacro" />
+  <xacro:include filename="$(find reflex_descriptions)/urdf/components/right_leg.xacro" />
+  <!-- <xacro:include filename="$(find reflex_descriptions)/urdf/components/sensors.xacro" /> TODO: Add sensors -->
+
+  <!-- Build robot -->
+  <xacro:reflex_base prefix="${prefix}" />
+  <xacro:reflex_left_leg prefix="${prefix}" parent="${prefix}base_link" />
+  <xacro:reflex_right_leg prefix="${prefix}" parent="${prefix}base_link" />
+  <!-- <xacro:reflex_sensors prefix="${prefix}" parent="${prefix}base_link" /> TODO: Add Sensors -->
+
+</robot>
