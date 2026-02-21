@@ -21,6 +21,7 @@ def generate_launch_description():
     spawn_yaw = LaunchConfiguration('spawn_yaw')
 
     controller_load_delay = LaunchConfiguration('controller_load_delay')
+    unpause_delay = LaunchConfiguration('unpause_delay')
 
     # Robot description from xacro
     pkg_share = FindPackageShare('reflex_gazebo')
@@ -50,14 +51,17 @@ def generate_launch_description():
 
         DeclareLaunchArgument('controller_load_delay', default_value='3.0'),
 
-        # -------- Start Gazebo --------
+        # NEW: Start paused and unpause after controllers are active
+        DeclareLaunchArgument('unpause_delay', default_value='6.0'),
+
+        # -------- Start Gazebo (PAUSED: removed -r) --------
         ExecuteProcess(
-            cmd=['gz', 'sim', '-r', world_path],
+            cmd=['gz', 'sim', world_path],
             output='screen',
             condition=LaunchConfigurationNotEquals('headless', 'True'),
         ),
         ExecuteProcess(
-            cmd=['gz', 'sim', '-r', '-s', world_path],
+            cmd=['gz', 'sim', '-s', world_path],
             output='screen',
             condition=LaunchConfigurationEquals('headless', 'True'),
         ),
@@ -100,7 +104,6 @@ def generate_launch_description():
         ),
 
         # -------- Force controller_manager to use sim time BEFORE loading controllers --------
-        # Give gz_ros2_control time to bring up /controller_manager, then set param.
         TimerAction(
             period=1.5,
             actions=[
@@ -122,7 +125,24 @@ def generate_launch_description():
                 ),
                 ExecuteProcess(
                     cmd=['ros2', 'control', 'load_controller', '--set-state', 'active',
-                        'diff_drive_controller'],
+                         'diff_drive_controller'],
+                    output='screen'
+                ),
+            ]
+        ),
+
+        # -------- Unpause Gazebo AFTER controllers are active --------
+        TimerAction(
+            period=unpause_delay,
+            actions=[
+                ExecuteProcess(
+                    cmd=[
+                        'gz', 'service', '-s', '/world/default/control',
+                        '--reqtype', 'gz.msgs.WorldControl',
+                        '--reptype', 'gz.msgs.Boolean',
+                        '--timeout', '1000',
+                        '--req', 'pause: false'
+                    ],
                     output='screen'
                 ),
             ]
