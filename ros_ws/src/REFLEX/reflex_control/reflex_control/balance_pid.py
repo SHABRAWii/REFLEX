@@ -6,6 +6,7 @@ import rclpy
 from rclpy.node import Node
 
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import TwistStamped
 from sensor_msgs.msg import Imu, JointState
 from std_msgs.msg import Float64MultiArray
 from rclpy.qos import qos_profile_sensor_data
@@ -172,7 +173,7 @@ class ReflexBalancePID(Node):
         self.last_time = self.get_clock().now()
 
         # subs/pubs
-        self.sub_cmd = self.create_subscription(Twist, '/diff_drive_controller/cmd_vel', self.on_cmd, 10)
+        self.sub_cmd = self.create_subscription(TwistStamped, '/diff_drive_controller/cmd_vel', self.on_cmd, 10)
         self.sub_js = self.create_subscription(JointState, '/joint_states', self.on_joint_states, qos_profile_sensor_data)
         self.sub_imu = self.create_subscription(Imu, '/imu', self.on_imu, qos_profile_sensor_data)
 
