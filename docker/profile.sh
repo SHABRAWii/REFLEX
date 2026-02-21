@@ -24,6 +24,8 @@ fi
 
 export REFLEX_NAME="REFLEX"
 export REFLEX_WS="/ws"
+export GZ_SIM_SYSTEM_PLUGIN_PATH=/opt/ros/${ROS_DISTRO}/lib:${GZ_SIM_SYSTEM_PLUGIN_PATH}
+export LD_LIBRARY_PATH=/opt/ros/${ROS_DISTRO}/lib:${LD_LIBRARY_PATH}
 
 # ---- REFLEX helper functions (container) ----
 reflex_cd() {
