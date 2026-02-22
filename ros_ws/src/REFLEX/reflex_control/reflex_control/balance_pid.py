@@ -12,6 +12,8 @@ from std_msgs.msg import Float64MultiArray
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy, HistoryPolicy
 from std_srvs.srv import Trigger
+from rcl_interfaces.msg import SetParametersResult  # add at top
+
 
 def clamp(x: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, x))
@@ -78,6 +80,44 @@ class PID:
         out = self.kp * err + self.ki * self.i_term + self.kd * d_err
         out = clamp(out, -self.out_max, self.out_max)
         return out
+    def step_terms(self, err: float, dt: float):
+        """Return (out, p, i, d, d_err, unclamped_out, i_term, out_clamped, i_clamped)."""
+        if dt <= 0.0:
+            return 0.0, 0.0, self.ki * self.i_term, 0.0, 0.0, 0.0, self.i_term, False, False
+
+        if not self.initialized:
+            self.prev_err = err
+            self.initialized = True
+
+        # integral
+        self.i_term += err * dt
+        i_clamped = False
+        if self.i_term > self.i_max:
+            self.i_term = self.i_max
+            i_clamped = True
+        elif self.i_term < -self.i_max:
+            self.i_term = -self.i_max
+            i_clamped = True
+
+        # derivative
+        d_err = (err - self.prev_err) / dt
+        self.prev_err = err
+
+        p = self.kp * err
+        i = self.ki * self.i_term
+        d = self.kd * d_err
+        unclamped = p + i + d
+
+        out = unclamped
+        out_clamped = False
+        if out > self.out_max:
+            out = self.out_max
+            out_clamped = True
+        elif out < -self.out_max:
+            out = -self.out_max
+            out_clamped = True
+
+        return out, p, i, d, d_err, unclamped, self.i_term, out_clamped, i_clamped
 
 
 class ReflexBalancePID(Node):
@@ -153,7 +193,9 @@ class ReflexBalancePID(Node):
             i_max=float(self.get_parameter('t_i_max').value),
             out_max=float(self.get_parameter('t_out_max').value),
         )
-
+        
+        self.add_on_set_parameters_callback(self.on_param_change)
+        
         # rates
         self.declare_parameter('inner_rate_hz', 250.0)
         self.declare_parameter('outer_rate_hz', 50.0)
@@ -233,6 +275,7 @@ class ReflexBalancePID(Node):
       if not math.isfinite(theta):
           return
 
+      # convert theta to deg then pass it
       self.theta = theta
       self.have_imu = True
 
@@ -246,6 +289,55 @@ class ReflexBalancePID(Node):
         response.success = True
         response.message = "PID state reset (integrators cleared, derivative reinitialized)."
         return response
+    def on_param_change(self, params):
+        """Live-update PID objects when ROS params change."""
+        updated = []
+        for p in params:
+            try:
+                if p.name == "v_kp":
+                    self.pid_v.kp = float(p.value); updated.append(p.name)
+                elif p.name == "v_ki":
+                    self.pid_v.ki = float(p.value); updated.append(p.name)
+                elif p.name == "v_kd":
+                    self.pid_v.kd = float(p.value); updated.append(p.name)
+                elif p.name == "v_i_max":
+                    self.pid_v.i_max = float(p.value); updated.append(p.name)
+                elif p.name == "v_out_max":
+                    self.pid_v.out_max = float(p.value); updated.append(p.name)
+
+                elif p.name == "t_kp":
+                    self.pid_t.kp = float(p.value); updated.append(p.name)
+                elif p.name == "t_ki":
+                    self.pid_t.ki = float(p.value); updated.append(p.name)
+                elif p.name == "t_kd":
+                    self.pid_t.kd = float(p.value); updated.append(p.name)
+                elif p.name == "t_i_max":
+                    self.pid_t.i_max = float(p.value); updated.append(p.name)
+                elif p.name == "t_out_max":
+                    self.pid_t.out_max = float(p.value); updated.append(p.name)
+
+                elif p.name == "theta_max":
+                    self.theta_max = float(p.value); updated.append(p.name)
+                elif p.name == "w_max":
+                    self.w_max = float(p.value); updated.append(p.name)
+                elif p.name == "wheel_radius":
+                    self.r = float(p.value); updated.append(p.name)
+                elif p.name == "wheel_separation":
+                    self.L = float(p.value); updated.append(p.name)
+                elif p.name == "balance_axis":
+                    self.balance_axis = str(p.value).lower(); updated.append(p.name)
+                elif p.name == "inner_rate_hz":
+                    # changing timer rate live is more work; accept param but warn
+                    updated.append(p.name)
+                elif p.name == "outer_rate_hz":
+                    updated.append(p.name)
+            except Exception as e:
+                return SetParametersResult(successful=False, reason=f"{p.name}: {e}")
+
+        if updated:
+            self.get_logger().info("Updated params: " + ", ".join(updated))
+
+        return SetParametersResult(successful=True)
 
     def on_timer(self):
         now = self.get_clock().now()
@@ -264,16 +356,32 @@ class ReflexBalancePID(Node):
         vR = self.r * self.wR_meas
         v_avg = 0.5 * (vL + vR)
 
+        # Defaults so debug publishing never crashes when outer loop is skipped
+        ev = float('nan')
+        dt_outer = float('nan')
+        theta_cmd = float('nan')
+        theta_set_raw = float('nan')
+        theta_set_clamp = False
+
+        v_p = v_i = v_d = v_derr = v_uncl = v_iterm = float('nan')
+        v_out_clamp = False
+        v_i_clamp = False
+
         # OUTER loop (decimated)
         self._tick += 1
         if (self._tick % self.outer_decim) == 0:
             ev = self.v_set - v_avg
-            theta_cmd = self.pid_v.step(ev, dt * self.outer_decim)
-            self.theta_set = clamp(theta_cmd, -self.theta_max, self.theta_max)
+            dt_outer = dt * self.outer_decim
+            theta_cmd, v_p, v_i, v_d, v_derr, v_uncl, v_iterm, v_out_clamp, v_i_clamp = self.pid_v.step_terms(ev, dt_outer)
+
+            theta_set_raw = theta_cmd
+            theta_set = clamp(theta_set_raw, -self.theta_max, self.theta_max)
+            theta_set_clamp = (theta_set != theta_set_raw)
+            self.theta_set = theta_set
 
         # INNER loop
-        e_theta = self.theta_set - self.theta
-        u = self.pid_t.step(e_theta, dt)  # u in rad/s (forward wheel speed term)
+        e_theta = 0.0 - self.theta
+        u, t_p, t_i, t_d, t_derr, t_uncl, t_iterm, t_out_clamp, t_i_clamp = self.pid_t.step_terms(e_theta, dt)
 
         # turning term from yaw_rate_set (rad/s) => wheel differential (rad/s)
         # v = w*r; diff v = yaw_rate * L/2  => diff w = (yaw_rate * L/2) / r
@@ -283,8 +391,37 @@ class ReflexBalancePID(Node):
         wR_cmd = clamp(u + w_turn, -self.w_max, self.w_max)
 
         dbg = Float64MultiArray()
-        dbg.data = [float(v_avg), float(self.v_set), float(self.theta), float(self.theta_set),
-                    float(u), float(wL_cmd), float(wR_cmd)]
+        dbg.data = [
+            # 0-6 (keep existing for backward compat)
+            float(v_avg), float(self.v_set), float(self.theta), float(self.theta_set),
+            float(u), float(wL_cmd), float(wR_cmd),
+
+            # 7-12 timing & inputs
+            float(dt), float(self.outer_decim), float(self.inner_rate), float(self.outer_rate),
+            float(self.yaw_rate_set), float(w_turn),
+
+            # 13-21 outer PID terms
+            float(ev), float(v_p), float(v_i), float(v_d), float(v_derr),
+            float(v_uncl), float(v_iterm),
+            float(1.0 if v_out_clamp else 0.0), float(1.0 if v_i_clamp else 0.0),
+            float(1.0 if theta_set_clamp else 0.0),
+
+            # 22-30 inner PID terms
+            float(e_theta), float(t_p), float(t_i), float(t_d), float(t_derr),
+            float(t_uncl), float(t_iterm),
+            float(1.0 if t_out_clamp else 0.0), float(1.0 if t_i_clamp else 0.0),
+
+            # 31-34 meas derived
+            float(vL), float(vR), float(self.wL_meas), float(self.wR_meas),
+            
+            # 35-40 PID gains (NEW)
+            float(self.pid_v.kp),
+            float(self.pid_v.ki),
+            float(self.pid_v.kd),
+            float(self.pid_t.kp),
+            float(self.pid_t.ki),
+            float(self.pid_t.kd),
+        ]
         self.pub_debug.publish(dbg)
 
         v_cmd = self.r * 0.5 * (wL_cmd + wR_cmd)

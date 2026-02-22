@@ -9,7 +9,11 @@ from rclpy.parameter import Parameter
 
 from std_srvs.srv import Trigger
 from rcl_interfaces.msg import SetParametersResult
-from rclpy.parameter_client import AsyncParameterClient
+from rcl_interfaces.srv import SetParameters
+import traceback
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
+
 
 def rpy_deg_to_quat(roll_deg: float, pitch_deg: float, yaw_deg: float):
     """Convert RPY degrees -> quaternion (x,y,z,w)."""
@@ -86,16 +90,24 @@ class ReflexPidTuner(Node):
         self.declare_parameter("pid_node", "/reflex_balance_pid")
         self.pid_node = str(self.get_parameter("pid_node").value)
 
-        # Parameter client to the PID node
-        self.pid_param_client = AsyncParameterClient(self, self.pid_node)
+        self.cb_group = ReentrantCallbackGroup()
 
-        # Service client to reset PID node (you must add this service in reflex_balance_pid; see note below)
-        self.reset_cli = self.create_client(Trigger, f"{self.pid_node}/reset")
+        # client(s)
+        self.set_params_cli = self.create_client(
+            SetParameters,
+            f"{self.pid_node}/set_parameters",
+            callback_group=self.cb_group
+        )
+        self.reset_cli = self.create_client(
+            Trigger,
+            f"{self.pid_node}/reset",
+            callback_group=self.cb_group
+        )
 
-        # Services exposed by tuner
-        self.create_service(Trigger, "apply_pose", self.srv_apply_pose)
-        self.create_service(Trigger, "apply_gains", self.srv_apply_gains)
-        self.create_service(Trigger, "reset_pid", self.srv_reset_pid)
+        # servers
+        self.create_service(Trigger, "apply_gains", self.srv_apply_gains, callback_group=self.cb_group)
+        self.create_service(Trigger, "apply_pose",  self.srv_apply_pose,  callback_group=self.cb_group)
+        self.create_service(Trigger, "reset_pid",   self.srv_reset_pid,   callback_group=self.cb_group)
 
         # Optional auto-apply
         if bool(self.get_parameter("apply_pose_on_start").value):
@@ -192,28 +204,36 @@ class ReflexPidTuner(Node):
             self._gains_applied = True
         self.get_logger().info(msg)
 
-    def apply_gains(self):
-        if not self.pid_param_client.service_is_ready():
-            # don’t block forever; return clean error
-            return False, f"PID param service not ready for {self.pid_node} (wait a bit and try again)."
+    def _param_services_ready(self) -> bool:
+        c = self.pid_param_client
+        if hasattr(c, "services_are_ready"):
+            return bool(c.services_are_ready())
+        if hasattr(c, "service_is_ready"):
+            return bool(c.service_is_ready())
+        # Worst case: assume not ready
+        return False
 
-        # Read our own params and push them to the PID node
+    def apply_gains(self):
+        # wait briefly for service (don't block forever)
+        if not self.set_params_cli.wait_for_service(timeout_sec=1.0):
+            return False, f"Service not ready: {self.pid_node}/set_parameters"
+
         names = [
             "v_kp", "v_ki", "v_kd", "v_i_max", "v_out_max",
             "t_kp", "t_ki", "t_kd", "t_i_max", "t_out_max",
         ]
-        params: List[Parameter] = []
+
+        req = SetParameters.Request()
+        req.parameters = []
         for n in names:
-            params.append(Parameter(n, value=float(self.get_parameter(n).value)))
+            val = float(self.get_parameter(n).value)
+            p = Parameter(n, value=val).to_parameter_msg()
+            req.parameters.append(p)
 
-        fut = self.pid_param_client.set_parameters(params)
-        rclpy.spin_until_future_complete(self, fut, timeout_sec=2.0)
-        if not fut.done():
-            return False, "Timed out setting PID parameters."
+        # IMPORTANT: synchronous call, safe inside callback
+        res = self.set_params_cli.call(req)
 
-        result_list = fut.result()
-        # result_list is a list of SetParametersResult
-        bad = [r.reason for r in result_list if not r.successful]
+        bad = [r.reason for r in res.results if not r.successful]
         if bad:
             return False, "Some parameters were rejected by PID node: " + "; ".join(bad)
 
@@ -226,9 +246,14 @@ class ReflexPidTuner(Node):
         )
 
     def srv_apply_gains(self, request, response):
-        ok, msg = self.apply_gains()
-        response.success = bool(ok)
-        response.message = msg
+        try:
+            ok, msg = self.apply_gains()
+            response.success = bool(ok)
+            response.message = msg
+        except Exception as e:
+            response.success = False
+            response.message = f"apply_gains exception: {type(e).__name__}: {e}"
+            self.get_logger().error(traceback.format_exc())
         return response
 
     # ----------------------- Reset PID -----------------------
@@ -257,12 +282,16 @@ class ReflexPidTuner(Node):
 def main():
     rclpy.init()
     node = ReflexPidTuner()
+    executor = MultiThreadedExecutor(num_threads=2)
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
-    node.destroy_node()
-    rclpy.shutdown()
+    finally:
+        executor.shutdown()
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":
