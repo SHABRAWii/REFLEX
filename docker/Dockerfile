@@ -82,19 +82,27 @@ RUN rosdep init 2>/dev/null || true
 RUN rosdep update
 
 # -------------------------
-# Quality-of-life + REFLEX env
+# Quality-of-life + REFLEX env (repo-mounted)
 # -------------------------
-COPY docker/profile.sh /etc/profile.d/reflex_env.sh
-# Ensure REFLEX profile loads in interactive shells (bash -i)
-RUN echo '[[ -f /etc/profile.d/reflex_env.sh ]] && source /etc/profile.d/reflex_env.sh' >> /etc/bash.bashrc
+
+# Entrypoint (will symlink ~/.bashrc -> repo bashrc when repo is mounted)
 COPY docker/entrypoint.sh /reflex_entrypoint.sh
-RUN chmod +x /reflex_entrypoint.sh && chmod a+r /etc/profile.d/reflex_env.sh
+RUN chmod +x /reflex_entrypoint.sh
+
+# Ensure repo bashrc loads for interactive shells (bash -i / docker exec -it ... bash -i)
+# This will do nothing if the repo isn't mounted yet.
+RUN printf '%s\n' \
+'[[ $- == *i* ]] || return 0' \
+'[[ -f /ws/scripts/container/reflex_bashrc ]] && source /ws/scripts/container/reflex_bashrc' \
+>> /etc/bash.bashrc
 
 # Provide a default bashrc for users created later (e.g., by rocker --user)
+# It will also defer to the repo-mounted bashrc when available.
 RUN printf '%s\n' \
 'export TERM=${TERM:-xterm-256color}' \
 'if [[ $- == *i* ]]; then' \
 '  export PS1="\\[\\e[1;32m\\]\\u@\\h\\[\\e[0m\\]:\\[\\e[1;34m\\]\\w\\[\\e[0m\\]\\$ "' \
+'  [[ -f /ws/scripts/container/reflex_bashrc ]] && source /ws/scripts/container/reflex_bashrc' \
 'fi' \
 > /etc/skel/.bashrc
 

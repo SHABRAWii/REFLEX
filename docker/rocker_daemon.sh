@@ -76,6 +76,9 @@ rocker \
 # 4) Start persistent container detached
 echo "Starting REFLEX container in background: ${CONTAINER_NAME}"
 
+# Ensure persistent bash history lives inside the repo (host side)
+mkdir -p "${REPO_ROOT}/.local/shell"
+touch "${REPO_ROOT}/.local/shell/bash_history"
 # Keep the container alive; users attach with docker exec.
 docker run -d \
   --name "${CONTAINER_NAME}" \
