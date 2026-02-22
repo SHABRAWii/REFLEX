@@ -11,6 +11,7 @@ from sensor_msgs.msg import Imu, JointState
 from std_msgs.msg import Float64MultiArray
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy, HistoryPolicy
+from std_srvs.srv import Trigger
 
 def clamp(x: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, x))
@@ -185,6 +186,7 @@ class ReflexBalancePID(Node):
 
         self.pub_debug = self.create_publisher(Float64MultiArray, '/reflex_balance/debug', 10)
         self.timer = self.create_timer(1.0 / self.inner_rate, self.on_timer)
+        self.create_service(Trigger, "reset", self.on_reset)
 
         self.get_logger().info(
             f"Balance PID started: axis={self.balance_axis}, r={self.r}, L={self.L}, "
@@ -233,6 +235,17 @@ class ReflexBalancePID(Node):
 
       self.theta = theta
       self.have_imu = True
+
+    def on_reset(self, request, response):
+        self.pid_v.reset()
+        self.pid_t.reset()
+        self.theta_set = 0.0
+        self._tick = 0
+        # Optional: treat as first run for dt/derivative
+        self.last_time = self.get_clock().now()
+        response.success = True
+        response.message = "PID state reset (integrators cleared, derivative reinitialized)."
+        return response
 
     def on_timer(self):
         now = self.get_clock().now()

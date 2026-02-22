@@ -32,29 +32,72 @@ def generate_launch_description():
     controller = Node(
         package='reflex_control',
         executable='reflex_balance_pid',
+        name='reflex_balance_pid',
         output='screen',
         parameters=[{
             'left_joint': 'Left_Wheel_Joint',
             'right_joint': 'Right_Wheel_Joint',
             'wheel_radius': 0.06,
             'wheel_separation': 0.30,
-            'balance_axis': 'pitch',
+            'balance_axis': 'roll',
             'theta_max': 0.25,
             'w_max': 40.0,
             'inner_rate_hz': 250.0,
             'outer_rate_hz': 50.0,
 
-            'v_kp': 0.6,
-            'v_ki': 0.3,
+            'v_kp': -5.0,
+            'v_ki': -3.0,
             'v_kd': 0.0,
             'v_i_max': 0.3,
             'v_out_max': 0.25,
 
-            't_kp': 25.0,
+            't_kp': -90.0,
             't_ki': 0.0,
-            't_kd': 1.2,
+            't_kd': 0.0,
             't_i_max': 5.0,
             't_out_max': 40.0,
+        }]
+    )
+
+    tuner = Node(
+        package='reflex_control',
+        executable='reflex_pid_tuner',
+        name='reflex_pid_tuner',
+        output='screen',
+        parameters=[{
+            # Gazebo world/model (your sim uses world "default" and model "reflex")
+            'gz_world': 'default',
+            'model_name': 'reflex',
+
+            # Default pose for teleport service (used when you call /apply_pose)
+            'x': 0.0,
+            'y': 0.0,
+            'z': 1.0,
+            'roll_deg': 0.0,
+            'pitch_deg': 0.0,
+            'yaw_deg': 0.0,
+
+            # Don’t auto-teleport unless you want it:
+            'apply_pose_on_start': False,
+
+            # PID target node name
+            'pid_node': '/reflex_balance_pid',
+
+            # Default gains stored in tuner (used when you call /apply_gains)
+            'v_kp': -5.0,
+            'v_ki': -3.0,
+            'v_kd': 0.0,
+            'v_i_max': 0.3,
+            'v_out_max': 0.25,
+
+            't_kp': -90.0,
+            't_ki': 0.0,
+            't_kd': 0.0,
+            't_i_max': 5.0,
+            't_out_max': 40.0,
+
+            # Don’t auto-apply gains unless you want it:
+            'apply_gains_on_start': False,
         }]
     )
 
@@ -68,4 +111,5 @@ def generate_launch_description():
 
         sim,
         controller,
+        tuner,
     ])
