@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# If stdin is not a TTY, try to reattach it to the controlling terminal.
+# This prevents docker/rocker from printing tty-resize warnings that break JSON parsing.
+if [[ ! -t 0 && -e /dev/tty ]]; then
+  exec </dev/tty
+fi
+
 # Default image (can override: IMAGE=reflex:jazzy-harmonic ./docker/rocker.sh)
 IMAGE="${IMAGE:-reflex:jazzy-harmonic}"
 

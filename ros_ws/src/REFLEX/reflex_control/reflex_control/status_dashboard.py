@@ -1,16 +1,116 @@
 #!/usr/bin/env python3
 import math
 import sys
-from typing import Optional
+import time
+from collections import deque
 
 import rclpy
 from rclpy.node import Node
+from rclpy.time import Time
 from sensor_msgs.msg import JointState, Imu
 from std_msgs.msg import Float64MultiArray
-
 from tf2_ros import Buffer, TransformListener
 
 
+# ----------------- Terminal styling -----------------
+ANSI = True
+
+def esc(code: str) -> str:
+    return f"\033[{code}m" if ANSI else ""
+
+RESET = esc("0")
+BOLD  = esc("1")
+DIM   = esc("2")
+
+FG_RED   = esc("31")
+FG_GREEN = esc("32")
+FG_YEL   = esc("33")
+FG_BLUE  = esc("34")
+FG_CYAN  = esc("36")
+FG_GRAY  = esc("90")
+
+def colorize(text: str, color: str) -> str:
+    return f"{color}{text}{RESET}" if ANSI else text
+
+def yesno(flag: bool, yes="YES", no="NO"):
+    return yes if flag else no
+
+def box_title(title: str, width: int) -> str:
+    t = f" {title} "
+    if len(t) >= width - 2:
+        t = t[:width-4] + ".. "
+    return "┌" + t + "─" * (width - 2 - len(t)) + "┐"
+
+def box_line(width: int) -> str:
+    return "├" + "─" * (width - 2) + "┤"
+
+def box_bottom(width: int) -> str:
+    return "└" + "─" * (width - 2) + "┘"
+
+def row2(k1, v1, k2, v2, wkey=18, wval=16):
+    return f"│ {k1:<{wkey}} {v1:>{wval}}  {k2:<{wkey}} {v2:>{wval}} │"
+
+def row1(k1, v1, width, wkey=18):
+    # single row spanning
+    left = f"│ {k1:<{wkey}} {v1}"
+    pad = max(0, width - 1 - len(left))
+    return left + " " * pad + "│"
+
+def safe_float(x):
+    try:
+        return float(x)
+    except Exception:
+        return float("nan")
+
+def fmt(x, w=9, p=3):
+    if x is None or (isinstance(x, float) and (math.isnan(x) or math.isinf(x))):
+        return f"{'nan':>{w}}"
+    return f"{x:>{w}.{p}f}"
+
+def fmt_col(x, w=9, p=3):
+    """Colored number: nan/red, normal/gray, big magnitude/blue (subtle)."""
+    if x is None or (isinstance(x, float) and (math.isnan(x) or math.isinf(x))):
+        return colorize(f"{'nan':>{w}}", FG_RED)
+    s = f"{x:>{w}.{p}f}"
+    return colorize(s, FG_GRAY)
+
+def deg(x):
+    return math.degrees(x) if x is not None and math.isfinite(x) else float("nan")
+
+def rad(x):
+    return math.radians(x) if x is not None and math.isfinite(x) else float("nan")
+
+def clamp_tag(flag_val: float) -> str:
+    on = bool(flag_val) and flag_val > 0.5
+    return colorize("CLAMP", FG_RED + BOLD) if on else colorize(" ok ", FG_GREEN)
+
+def stale_tag(age: float, thresh: float) -> str:
+    if not math.isfinite(age):
+        return colorize(" NO ", FG_RED + BOLD)
+    if age <= thresh:
+        return colorize(" OK ", FG_GREEN)
+    if age <= thresh * 2.0:
+        return colorize(" OLD", FG_YEL + BOLD)
+    return colorize("STALE", FG_RED + BOLD)
+
+def spark(values, width=28):
+    if not values:
+        return ""
+    vmin = min(values)
+    vmax = max(values)
+    if vmax - vmin < 1e-9:
+        return "▁" * min(width, len(values))
+    blocks = "▁▂▃▄▅▆▇█"
+    vals = list(values)[-width:]
+    out = []
+    for v in vals:
+        t = (v - vmin) / (vmax - vmin)
+        idx = int(t * (len(blocks) - 1) + 1e-9)
+        out.append(blocks[max(0, min(idx, len(blocks)-1))])
+    return "".join(out)
+
+
+# ----------------- Math helpers -----------------
 def quat_to_euler(x, y, z, w):
     sinr_cosp = 2.0 * (w * x + y * z)
     cosr_cosp = 1.0 - 2.0 * (x * x + y * y)
@@ -33,19 +133,27 @@ class StatusDashboard(Node):
         self.declare_parameter('right_joint', 'Right_Wheel_Joint')
         self.declare_parameter('base_frame', 'base_link')
         self.declare_parameter('world_frame', 'odom')
+
         self.left_joint = self.get_parameter('left_joint').value
         self.right_joint = self.get_parameter('right_joint').value
         self.base_frame = self.get_parameter('base_frame').value
         self.world_frame = self.get_parameter('world_frame').value
 
-        self.wL = 0.0
-        self.wR = 0.0
-        self.roll = 0.0
-        self.pitch = 0.0
-        self.yaw = 0.0
+        self.wL = float('nan')
+        self.wR = float('nan')
+        self.roll = float('nan')
+        self.pitch = float('nan')
+        self.yaw = float('nan')
 
-        # debug: [v_avg, v_set, theta, theta_set, u, wL_cmd, wR_cmd]
-        self.debug = [float('nan')] * 7
+        self.t_js = None
+        self.t_imu = None
+        self.t_dbg = None
+
+        self.debug = []
+
+        self.hist_v = deque(maxlen=80)
+        self.hist_theta = deque(maxlen=80)
+        self.hist_u = deque(maxlen=80)
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
@@ -54,57 +162,252 @@ class StatusDashboard(Node):
         self.create_subscription(Imu, '/imu', self.on_imu, 50)
         self.create_subscription(Float64MultiArray, '/reflex_balance/debug', self.on_debug, 10)
 
-        self.timer = self.create_timer(0.1, self.render)  # 10 Hz refresh
+        self.timer = self.create_timer(0.1, self.render)
 
-        # clear screen once
+        # clear once
         sys.stdout.write("\033[2J\033[H")
         sys.stdout.flush()
 
     def on_js(self, msg: JointState):
+        self.t_js = time.monotonic()
         idx = {n: i for i, n in enumerate(msg.name)}
         if self.left_joint in idx:
             i = idx[self.left_joint]
-            if i < len(msg.velocity): self.wL = float(msg.velocity[i])
+            if i < len(msg.velocity):
+                self.wL = float(msg.velocity[i])
         if self.right_joint in idx:
             i = idx[self.right_joint]
-            if i < len(msg.velocity): self.wR = float(msg.velocity[i])
+            if i < len(msg.velocity):
+                self.wR = float(msg.velocity[i])
 
     def on_imu(self, msg: Imu):
+        self.t_imu = time.monotonic()
         r, p, y = quat_to_euler(msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w)
         self.roll, self.pitch, self.yaw = r, p, y
 
     def on_debug(self, msg: Float64MultiArray):
-        if len(msg.data) >= 7:
-            self.debug = list(msg.data[:7])
+        self.t_dbg = time.monotonic()
+        self.debug = list(msg.data)
+
+    def _age(self, t):
+        if t is None:
+            return float("inf")
+        return time.monotonic() - t
 
     def render(self):
         # TF lookup
         pos = (float('nan'), float('nan'), float('nan'))
         rpy = (float('nan'), float('nan'), float('nan'))
         try:
-            t = self.tf_buffer.lookup_transform(self.world_frame, self.base_frame, rclpy.time.Time())
+            t = self.tf_buffer.lookup_transform(self.world_frame, self.base_frame, Time())
             pos = (t.transform.translation.x, t.transform.translation.y, t.transform.translation.z)
             q = t.transform.rotation
             rpy = quat_to_euler(q.x, q.y, q.z, q.w)
         except Exception:
             pass
 
-        v_avg, v_set, theta, theta_set, u, wL_cmd, wR_cmd = self.debug
+        # Decode debug (supports old 7-float format too)
+        d = self.debug + [float('nan')] * (40 - len(self.debug))
 
-        # overwrite screen in-place
-        sys.stdout.write("\033[H")  # cursor home
-        sys.stdout.write("REFLEX Status Dashboard\n")
-        sys.stdout.write("=" * 60 + "\n")
-        sys.stdout.write(f"Wheels (rad/s):  wL={self.wL:8.3f}   wR={self.wR:8.3f}\n")
-        sys.stdout.write(f"IMU RPY (deg):   roll={math.degrees(self.roll):7.2f}  pitch={math.degrees(self.pitch):7.2f}  yaw={math.degrees(self.yaw):7.2f}\n")
-        sys.stdout.write("-" * 60 + "\n")
-        sys.stdout.write(f"PID v_avg (m/s): v={v_avg:8.3f}   v_set={v_set:8.3f}\n")
-        sys.stdout.write(f"PID theta (deg): theta={math.degrees(theta):7.2f}  theta_set={math.degrees(theta_set):7.2f}\n")
-        sys.stdout.write(f"Inner output u:  u={u:8.3f}  cmds: wL_cmd={wL_cmd:8.3f}  wR_cmd={wR_cmd:8.3f}\n")
-        sys.stdout.write("-" * 60 + "\n")
-        sys.stdout.write(f"Base pose (world): x={pos[0]:7.3f} y={pos[1]:7.3f} z={pos[2]:7.3f}\n")
-        sys.stdout.write(f"Base rpy  (deg):   r={math.degrees(rpy[0]):7.2f} p={math.degrees(rpy[1]):7.2f} y={math.degrees(rpy[2]):7.2f}\n")
-        sys.stdout.write("=" * 60 + "\n")
+        v_avg, v_set, theta, theta_set, u, wL_cmd, wR_cmd = d[0:7]
+        dt, outer_decim, inner_rate, outer_rate, yaw_rate_set, w_turn = d[7:13]
+        ev, v_p, v_i, v_d, v_derr, v_uncl, v_iterm, v_out_clamp, v_i_clamp, theta_set_clamp = d[13:23]
+        e_theta, t_p, t_i, t_d, t_derr, t_uncl, t_iterm, t_out_clamp, t_i_clamp = d[23:32]
+        vL, vR, wL_meas, wR_meas = d[32:36]
+        v_kp, v_ki, v_kd, t_kp, t_ki, t_kd = d[36:42]
+
+        # trends
+        if math.isfinite(v_avg): self.hist_v.append(v_avg)
+        if math.isfinite(theta): self.hist_theta.append(theta)
+        if math.isfinite(u): self.hist_u.append(u)
+
+        # ages
+        a_js = self._age(self.t_js)
+        a_imu = self._age(self.t_imu)
+        a_dbg = self._age(self.t_dbg)
+
+        WIDTH = 92
+
+        # screen home
+        sys.stdout.write("\033[H")
+
+        header = f"{BOLD}REFLEX PID Insight Dashboard{RESET}"
+        now_s = time.strftime("%H:%M:%S")
+        sys.stdout.write(f"{header}  {DIM}{now_s}{RESET}\n")
+
+        # ---------------- Status / Timing box ----------------
+        sys.stdout.write(box_title("STATUS / TIMING", WIDTH) + "\n")
+        sys.stdout.write(row2(
+            "joint_states age", f"{fmt_col(a_js, w=7, p=2)} {stale_tag(a_js, 0.5)}",
+            "imu age",         f"{fmt_col(a_imu, w=7, p=2)} {stale_tag(a_imu, 0.5)}",
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "debug age",       f"{fmt_col(a_dbg, w=7, p=2)} {stale_tag(a_dbg, 1.0)}",
+            "dt (s)",          f"{fmt_col(dt, w=9, p=5)}",
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "inner_rate (Hz)", fmt_col(inner_rate, w=9, p=1),
+            "outer_decim",     fmt_col(outer_decim, w=9, p=0),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "outer_rate (Hz)", fmt_col(outer_rate, w=9, p=1),
+            "frames dbg",      colorize(f"{len(self.debug):>9d}", FG_CYAN),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(box_bottom(WIDTH) + "\n")
+
+        # ---------------- Wheels / Velocity box ----------------
+        sys.stdout.write(box_title("WHEELS / VELOCITY", WIDTH) + "\n")
+        sys.stdout.write(row2(
+            "wL meas (rad/s)", fmt_col(self.wL),
+            "wR meas (rad/s)", fmt_col(self.wR),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "vL (m/s)", fmt_col(vL),
+            "vR (m/s)", fmt_col(vR),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "v_avg (m/s)", fmt_col(v_avg),
+            "v_set (m/s)", fmt_col(v_set),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "ev", fmt_col(ev),
+            "trend v_avg", colorize(spark(self.hist_v), FG_BLUE),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(box_bottom(WIDTH) + "\n")
+
+        # ---------------- Outer PID box ----------------
+        sys.stdout.write(box_title("OUTER PID: v -> theta_set", WIDTH) + "\n")
+        sys.stdout.write(row2(
+            "P", fmt_col(v_p),
+            "I", fmt_col(v_i),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "D", fmt_col(v_d),
+            "dErr", fmt_col(v_derr),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "unclamped", fmt_col(v_uncl),
+            "i_term", fmt_col(v_iterm),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "I clamp", clamp_tag(v_i_clamp),
+            "Out clamp", clamp_tag(v_out_clamp),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "theta_set (rad)", fmt_col(theta_set),
+            "theta_set clamp", clamp_tag(theta_set_clamp),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "theta_set (deg)", fmt_col(deg(theta_set), w=9, p=2),
+            "trend theta", colorize(spark(self.hist_theta), FG_BLUE),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(box_bottom(WIDTH) + "\n")
+        
+        # ---------------- PID GAINS ----------------
+        sys.stdout.write(box_title("PID GAINS", WIDTH) + "\n")
+
+        sys.stdout.write(row2(
+            "Outer Kp", fmt_col(v_kp),
+            "Inner Kp", fmt_col(t_kp),
+            wkey=18, wval=22
+        ) + "\n")
+
+        sys.stdout.write(row2(
+            "Outer Ki", fmt_col(v_ki),
+            "Inner Ki", fmt_col(t_ki),
+            wkey=18, wval=22
+        ) + "\n")
+
+        sys.stdout.write(row2(
+            "Outer Kd", fmt_col(v_kd),
+            "Inner Kd", fmt_col(t_kd),
+            wkey=18, wval=22
+        ) + "\n")
+
+        sys.stdout.write(box_bottom(WIDTH) + "\n")
+
+        # ---------------- IMU / Inner PID box ----------------
+        sys.stdout.write(box_title("IMU / INNER PID: theta -> u", WIDTH) + "\n")
+        sys.stdout.write(row2(
+            "roll (deg)", fmt_col(deg(self.roll), w=9, p=2),
+            "pitch (deg)", fmt_col(deg(self.pitch), w=9, p=2),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "yaw (deg)", fmt_col(deg(self.yaw), w=9, p=2),
+            "theta (rad)", fmt_col((theta)),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "e_theta", fmt_col(e_theta),
+            "theta (deg)", fmt_col(deg(theta), w=9, p=2),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "P", fmt_col(t_p),
+            "I", fmt_col(t_i),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "D", fmt_col(t_d),
+            "dErr", fmt_col(t_derr),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "unclamped", fmt_col(t_uncl),
+            "i_term", fmt_col(t_iterm),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "I clamp", clamp_tag(t_i_clamp),
+            "Out clamp", clamp_tag(t_out_clamp),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "u (rad/s)", fmt_col(u),
+            "trend u", colorize(spark(self.hist_u), FG_BLUE),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(box_bottom(WIDTH) + "\n")
+
+        # ---------------- Outputs / Pose box ----------------
+        sys.stdout.write(box_title("OUTPUTS / POSE", WIDTH) + "\n")
+        sys.stdout.write(row2(
+            "yaw_rate_set", fmt_col(yaw_rate_set),
+            "w_turn", fmt_col(w_turn),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "wL_cmd", fmt_col(wL_cmd),
+            "wR_cmd", fmt_col(wR_cmd),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "x (m)", fmt_col(pos[0], w=9, p=3),
+            "y (m)", fmt_col(pos[1], w=9, p=3),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(row2(
+            "z (m)", fmt_col(pos[2], w=9, p=3),
+            "yaw (deg)", fmt_col(deg(rpy[2]), w=9, p=2),
+            wkey=18, wval=22
+        ) + "\n")
+        sys.stdout.write(box_bottom(WIDTH) + "\n")
+
         sys.stdout.flush()
 
 

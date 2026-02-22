@@ -261,6 +261,16 @@ reflex_apply_pose_srv() {
     return 1
   fi
 }
+reflex_apply_gains_srv() {
+  if ros2 service list 2>/dev/null | grep -qx "/apply_gains"; then
+    ros2 service call /apply_gains std_srvs/srv/Trigger "{}" >/dev/null \
+      && _reflex_ok "Gains applied: /apply_gains" \
+      || { _reflex_err "Gains apply FAILED: /apply_gains"; return 1; }
+  else
+    _reflex_err "Service not found: /apply_gains"
+    return 1
+  fi
+}
 
 # ----------------------------
 # [7] Gazebo Harmonic pause/resume
@@ -309,8 +319,9 @@ reflex_apply() {
   __REFLEX_STAGED_PARAMS=()
   _reflex_ok "All staged params applied."
 
-  reflex_reset_pid      || { reflex_resume; return 1; }
-  reflex_apply_pose_srv || { reflex_resume; return 1; }
+  reflex_apply_gains_srv || { reflex_resume; return 1; }
+  reflex_reset_pid       || { reflex_resume; return 1; }
+  reflex_apply_pose_srv  || { reflex_resume; return 1; }
 
   reflex_resume
 }
