@@ -1,0 +1,459 @@
+<sdf version='1.11'>
+  <model name='reflex'>
+    <link name='base_link'>
+      <inertial>
+        <pose>2.92339840704624e-06 0.19567544117535399 -0.066728802359244596 0 0 0</pose>
+        <mass>4.45917765815169</mass>
+        <inertia>
+          <ixx>0.047576240288036503</ixx>
+          <ixy>3.0402832758819899e-06</ixy>
+          <ixz>-2.9055288386289899e-06</ixz>
+          <iyy>0.025942486539569699</iyy>
+          <iyz>-5.4637214022435901e-05</iyz>
+          <izz>0.052322304650113699</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_link_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Main.STL</uri>
+          </mesh>
+        </geometry>
+        <surface>
+          <contact>
+            <ode/>
+          </contact>
+          <friction>
+            <ode/>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='base_link_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Main.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.872549057 0.872549057 0.872549057 1</diffuse>
+          <ambient>0.872549057 0.872549057 0.872549057 1</ambient>
+        </material>
+      </visual>
+      <sensor name='imu' type='imu'>
+        <always_on>true</always_on>
+        <update_rate>200</update_rate>
+        <visualize>false</visualize>
+        <topic>/imu</topic>
+        <imu>
+          <angular_velocity>
+            <x>
+              <noise type='gaussian'>
+                <mean>0</mean>
+                <stddev>0.00020000000000000001</stddev>
+              </noise>
+            </x>
+            <y>
+              <noise type='gaussian'>
+                <mean>0</mean>
+                <stddev>0.00020000000000000001</stddev>
+              </noise>
+            </y>
+            <z>
+              <noise type='gaussian'>
+                <mean>0</mean>
+                <stddev>0.00020000000000000001</stddev>
+              </noise>
+            </z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x>
+              <noise type='gaussian'>
+                <mean>0</mean>
+                <stddev>0.02</stddev>
+              </noise>
+            </x>
+            <y>
+              <noise type='gaussian'>
+                <mean>0</mean>
+                <stddev>0.02</stddev>
+              </noise>
+            </y>
+            <z>
+              <noise type='gaussian'>
+                <mean>0</mean>
+                <stddev>0.02</stddev>
+              </noise>
+            </z>
+          </linear_acceleration>
+        </imu>
+      </sensor>
+    </link>
+    <joint name='Left_Hip_joint' type='revolute'>
+      <pose relative_to='base_link'>0.2064 0.19 -0.070000000000000007 0.78540000000000021 -4.2351647362715017e-22 -3.1415853071795872</pose>
+      <parent>base_link</parent>
+      <child>Left_Hip</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0</upper>
+          <effort>0</effort>
+          <velocity>0</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Left_Hip'>
+      <pose relative_to='Left_Hip_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0.049151 -0.094719999999999999 -4.3651999999999999e-08 0 0 0</pose>
+        <mass>1.5424</mass>
+        <inertia>
+          <ixx>0.010215</ixx>
+          <ixy>0.00043419999999999998</ixy>
+          <ixz>-5.0860999999999996e-10</ixz>
+          <iyy>0.0011474</iyy>
+          <iyz>-1.6319000000000001e-10</iyz>
+          <izz>0.0093638999999999997</izz>
+        </inertia>
+      </inertial>
+      <collision name='Left_Hip_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Left_Hip.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='Left_Hip_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Left_Hip.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.872549057 0.872549057 0.872549057 1</diffuse>
+          <ambient>0.872549057 0.872549057 0.872549057 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='Left_Knee_joint' type='revolute'>
+      <pose relative_to='Left_Hip'>0.077499999999999999 -0.20000000000000001 0 1.8984000000000001 -4.2351647362715017e-22 -3.1415853071795872</pose>
+      <parent>Left_Hip</parent>
+      <child>Left_Knee</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0</upper>
+          <effort>0</effort>
+          <velocity>0</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Left_Knee'>
+      <pose relative_to='Left_Knee_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0.015086 -0.090977000000000002 0 0 0 0</pose>
+        <mass>0.77383999999999997</mass>
+        <inertia>
+          <ixx>0.0056427999999999999</ixx>
+          <ixy>1.1442e-05</ixy>
+          <ixz>-8.411e-19</ixz>
+          <iyy>0.00055296999999999996</iyy>
+          <iyz>-3.8218e-18</iyz>
+          <izz>0.0052588000000000001</izz>
+        </inertia>
+      </inertial>
+      <collision name='Left_Knee_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Left_Knee.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='Left_Knee_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Left_Knee.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.872549057 0.872549057 0.872549057 1</diffuse>
+          <ambient>0.872549057 0.872549057 0.872549057 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='Left_Wheel_Joint' type='revolute'>
+      <pose relative_to='Left_Knee'>0.040000000000000001 -0.20000000000000001 0 -1.5708 -0.91317000000000015 -1.5708</pose>
+      <parent>Left_Knee</parent>
+      <child>Left_Wheel</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Left_Wheel'>
+      <pose relative_to='Left_Wheel_Joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>-2.7522999999999999e-06 1.3291999999999999e-06 0.029027000000000001 0 0 0</pose>
+        <mass>0.51690000000000003</mass>
+        <inertia>
+          <ixx>0.0012561</ixx>
+          <ixy>6.7856999999999998e-09</ixy>
+          <ixz>2.8567e-08</ixz>
+          <iyy>0.0012561</iyy>
+          <iyz>-7.6346000000000001e-09</iyz>
+          <izz>0.0023842999999999998</izz>
+        </inertia>
+      </inertial>
+      <collision name='Left_Wheel_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Left_Wheel.STL</uri>
+          </mesh>
+        </geometry>
+        <surface>
+          <contact>
+            <ode/>
+          </contact>
+          <friction>
+            <ode>
+              <mu>10000</mu>
+              <mu2>1</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='Left_Wheel_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Left_Wheel.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.990199983 1 1 1</diffuse>
+          <ambient>0.990199983 1 1 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='Right_Hip_Joint' type='revolute'>
+      <pose relative_to='base_link'>-0.1089 0.19 -0.070000000000000007 -2.8008999999999999 0 0</pose>
+      <parent>base_link</parent>
+      <child>Right_Hip</child>
+      <axis>
+        <xyz>1 0 0</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0</upper>
+          <effort>0</effort>
+          <velocity>0</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Right_Hip'>
+      <pose relative_to='Right_Hip_Joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>-0.048349000000000003 -0.040744000000000002 0.085510000000000003 0 0 0</pose>
+        <mass>1.5424</mass>
+        <inertia>
+          <ixx>0.010215</ixx>
+          <ixy>0.00018677</ixy>
+          <ixz>-0.00039198</ixz>
+          <iyy>0.0078435999999999992</iyy>
+          <iyz>0.0031906</iyz>
+          <izz>0.0026676999999999998</izz>
+        </inertia>
+      </inertial>
+      <collision name='Right_Hip_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Right_Hip.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='Right_Hip_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Right_Hip.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.872549057 0.872549057 0.872549057 1</diffuse>
+          <ambient>0.872549057 0.872549057 0.872549057 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='Right_Knee_joint' type='revolute'>
+      <pose relative_to='Right_Hip'>-0.02 -0.086029999999999995 0.18054999999999999 -0.77222000000000002 4.2351647362715017e-22 -3.1415853071795872</pose>
+      <parent>Right_Hip</parent>
+      <child>Right_Knee</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0</upper>
+          <effort>0</effort>
+          <velocity>0</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Right_Knee'>
+      <pose relative_to='Right_Knee_joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0.015086 -0.090977000000000002 -3.8858e-16 0 0 0</pose>
+        <mass>0.77383999999999997</mass>
+        <inertia>
+          <ixx>0.0056427999999999999</ixx>
+          <ixy>1.1442e-05</ixy>
+          <ixz>-1.8135e-18</ixz>
+          <iyy>0.00055296999999999996</iyy>
+          <iyz>-1.297e-17</iyz>
+          <izz>0.0052588000000000001</izz>
+        </inertia>
+      </inertial>
+      <collision name='Right_Knee_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Right_Knee.STL</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='Right_Knee_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Right_Knee.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.872549057 0.872549057 0.872549057 1</diffuse>
+          <ambient>0.872549057 0.872549057 0.872549057 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <joint name='Right_Wheel_Joint' type='revolute'>
+      <pose relative_to='Right_Knee'>0.040000000000000001 -0.20000000000000001 0 1.5708 -0.91317000000000015 1.5708</pose>
+      <parent>Right_Knee</parent>
+      <child>Right_Wheel</child>
+      <axis>
+        <xyz>0 0 -1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='Right_Wheel'>
+      <pose relative_to='Right_Wheel_Joint'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>-0.00020036000000000001 1.3304e-06 0.029027000000000001 0 0 0</pose>
+        <mass>0.51690000000000003</mass>
+        <inertia>
+          <ixx>0.0012561</ixx>
+          <ixy>6.8223999999999999e-09</ixy>
+          <ixz>2.8546e-08</ixz>
+          <iyy>0.0012561</iyy>
+          <iyz>-7.6288999999999996e-09</iyz>
+          <izz>0.0023842999999999998</izz>
+        </inertia>
+      </inertial>
+      <collision name='Right_Wheel_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Right_Wheel.STL</uri>
+          </mesh>
+        </geometry>
+        <surface>
+          <contact>
+            <ode/>
+          </contact>
+          <friction>
+            <ode>
+              <mu>10000</mu>
+              <mu2>1</mu2>
+            </ode>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='Right_Wheel_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Right_Wheel.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.990199983 1 1 1</diffuse>
+          <ambient>0.990199983 1 1 1</ambient>
+        </material>
+      </visual>
+    </link>
+    <plugin name='gz_ros2_control::GazeboSimROS2ControlPlugin' filename='libgz_ros2_control-system.so'>
+      <parameters>/ws/ros_ws/install/reflex_gazebo/share/reflex_gazebo/config/controllers.yaml</parameters>
+    </plugin>
+    <plugin name='gz::sim::systems::PosePublisher' filename='libgz-sim-pose-publisher-system.so'>
+      <publish_link_pose>false</publish_link_pose>
+      <publish_sensor_pose>true</publish_sensor_pose>
+      <publish_collision_pose>false</publish_collision_pose>
+      <publish_visual_pose>false</publish_visual_pose>
+      <publish_nested_model_pose>false</publish_nested_model_pose>
+      <publish_model_pose>false</publish_model_pose>
+      <use_pose_vector_msg>true</use_pose_vector_msg>
+      <static_publisher>false</static_publisher>
+      <static_update_frequency>1</static_update_frequency>
+    </plugin>
+    <plugin name='gz::sim::systems::JointStatePublisher' filename='gz-sim-joint-state-publisher-system'/>
+  </model>
+</sdf>
