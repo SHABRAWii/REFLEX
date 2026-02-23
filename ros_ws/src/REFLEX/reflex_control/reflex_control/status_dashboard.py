@@ -207,7 +207,8 @@ class StatusDashboard(Node):
             pass
 
         # Decode debug (supports old 7-float format too)
-        d = self.debug + [float('nan')] * (40 - len(self.debug))
+        TARGET = 42
+        d = (self.debug + [float('nan')] * (TARGET - len(self.debug)))[:TARGET]
 
         v_avg, v_set, theta, theta_set, u, wL_cmd, wR_cmd = d[0:7]
         dt, outer_decim, inner_rate, outer_rate, yaw_rate_set, w_turn = d[7:13]

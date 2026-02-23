@@ -70,6 +70,7 @@ class ReflexPidTuner(Node):
         self.declare_parameter("yaw_deg", 0.0)
 
         self.declare_parameter("apply_pose_on_start", False)
+        self.declare_parameter("w_max", 0.0)
 
         # ---- PID gain params (these will be written to /reflex_balance_pid) ----
         self.declare_parameter("v_kp", 0.6)
@@ -204,15 +205,6 @@ class ReflexPidTuner(Node):
             self._gains_applied = True
         self.get_logger().info(msg)
 
-    def _param_services_ready(self) -> bool:
-        c = self.pid_param_client
-        if hasattr(c, "services_are_ready"):
-            return bool(c.services_are_ready())
-        if hasattr(c, "service_is_ready"):
-            return bool(c.service_is_ready())
-        # Worst case: assume not ready
-        return False
-
     def apply_gains(self):
         # wait briefly for service (don't block forever)
         if not self.set_params_cli.wait_for_service(timeout_sec=1.0):
@@ -221,6 +213,7 @@ class ReflexPidTuner(Node):
         names = [
             "v_kp", "v_ki", "v_kd", "v_i_max", "v_out_max",
             "t_kp", "t_ki", "t_kd", "t_i_max", "t_out_max",
+            "w_max"
         ]
 
         req = SetParameters.Request()
@@ -242,7 +235,8 @@ class ReflexPidTuner(Node):
             f"v(kp,ki,kd)=({self.get_parameter('v_kp').value},"
             f"{self.get_parameter('v_ki').value},{self.get_parameter('v_kd').value}) "
             f"t(kp,ki,kd)=({self.get_parameter('t_kp').value},"
-            f"{self.get_parameter('t_ki').value},{self.get_parameter('t_kd').value})"
+            f"{self.get_parameter('t_ki').value},{self.get_parameter('t_kd').value}) "
+            f"w_max={self.get_parameter('w_max').value}"
         )
 
     def srv_apply_gains(self, request, response):
@@ -258,25 +252,21 @@ class ReflexPidTuner(Node):
 
     # ----------------------- Reset PID -----------------------
     def srv_reset_pid(self, request, response):
-        if not self.reset_cli.service_is_ready():
+        if not self.reset_cli.wait_for_service(timeout_sec=1.0):
             response.success = False
-            response.message = (
-                f"Reset service not available: {self.pid_node}/reset\n"
-                f"Add a Trigger service in reflex_balance_pid to support reset."
-            )
+            response.message = f"Reset service not available: {self.pid_node}/reset"
             return response
 
-        fut = self.reset_cli.call_async(Trigger.Request())
-        rclpy.spin_until_future_complete(self, fut, timeout_sec=2.0)
-        if not fut.done():
-            response.success = False
-            response.message = "Timed out calling PID reset."
+        try:
+            res = self.reset_cli.call(Trigger.Request())
+            response.success = bool(res.success)
+            response.message = str(res.message)
             return response
-
-        res = fut.result()
-        response.success = bool(res.success)
-        response.message = str(res.message)
-        return response
+        except Exception as e:
+            response.success = False
+            response.message = f"reset exception: {type(e).__name__}: {e}"
+            self.get_logger().error(traceback.format_exc())
+            return response
 
 
 def main():
