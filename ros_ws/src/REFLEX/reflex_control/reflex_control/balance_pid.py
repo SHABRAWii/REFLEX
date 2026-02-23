@@ -380,15 +380,15 @@ class ReflexBalancePID(Node):
             self.theta_set = theta_set
 
         # INNER loop
-        e_theta = 0.0 - self.theta
+        e_theta = self.theta - self.theta_set
         u, t_p, t_i, t_d, t_derr, t_uncl, t_iterm, t_out_clamp, t_i_clamp = self.pid_t.step_terms(e_theta, dt)
 
         # turning term from yaw_rate_set (rad/s) => wheel differential (rad/s)
         # v = w*r; diff v = yaw_rate * L/2  => diff w = (yaw_rate * L/2) / r
         w_turn = (self.yaw_rate_set * (self.L / 2.0)) / max(1e-6, self.r)
 
-        wL_cmd = clamp(u - w_turn, -self.w_max, self.w_max)
-        wR_cmd = clamp(u + w_turn, -self.w_max, self.w_max)
+        wL_cmd = clamp(u, -self.w_max, self.w_max)
+        wR_cmd = clamp(u, -self.w_max, self.w_max)
 
         dbg = Float64MultiArray()
         dbg.data = [
@@ -424,8 +424,8 @@ class ReflexBalancePID(Node):
         ]
         self.pub_debug.publish(dbg)
 
-        v_cmd = self.r * 0.5 * (wL_cmd + wR_cmd)
-        yaw_cmd = (self.r / self.L) * (wR_cmd - wL_cmd)
+        v_cmd = u
+        yaw_cmd = 0
 
         cmd = TwistStamped()
         cmd.header.stamp = self.get_clock().now().to_msg()
