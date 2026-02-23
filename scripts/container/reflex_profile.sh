@@ -49,6 +49,7 @@ export REFLEX_TUNER_NODE="${REFLEX_TUNER_NODE:-/reflex_pid_tuner}"
 # Gazebo / ROS library paths (safe if empty)
 export GZ_SIM_SYSTEM_PLUGIN_PATH="/opt/ros/${ROS_DISTRO:-jazzy}/lib:${GZ_SIM_SYSTEM_PLUGIN_PATH:-}"
 export LD_LIBRARY_PATH="/opt/ros/${ROS_DISTRO:-jazzy}/lib:${LD_LIBRARY_PATH:-}"
+export GZ_SIM_RESOURCE_PATH=/ws/ros_ws/src/REFLEX/reflex_gazebo/models:$GZ_SIM_RESOURCE_PATH
 
 # ----------------------------
 # [1] Color + Logging Helpers
@@ -276,7 +277,7 @@ reflex_apply_gains_srv() {
 # [7] Gazebo Harmonic pause/resume
 # ----------------------------
 reflex_pause() {
-  gz service -s /world/default/control \
+  gz service -s /world/reflex_world/control \
     --reqtype gz.msgs.WorldControl \
     --reptype gz.msgs.Boolean \
     --req 'pause: true' >/dev/null 2>&1 \
@@ -285,7 +286,7 @@ reflex_pause() {
 }
 
 reflex_resume() {
-  gz service -s /world/default/control \
+  gz service -s /world/reflex_world/control \
     --reqtype gz.msgs.WorldControl \
     --reptype gz.msgs.Boolean \
     --req 'pause: false' >/dev/null 2>&1 \
@@ -294,36 +295,84 @@ reflex_resume() {
 }
 
 # ----------------------------
-# [8] Apply Staged Params (pause -> set -> reset -> apply_pose -> resume)
+# [7.5] Stop diff_drive cmd_vel (safety)
 # ----------------------------
-reflex_apply() {
-  if [[ ${#__REFLEX_STAGED_PARAMS[@]} -eq 0 ]]; then
-    _reflex_info "Nothing to apply (no staged params)."
+reflex_stop() {
+  # Publish zero cmd_vel a few times to ensure controller receives it.
+  # If another node publishes non-zero, it can override immediately.
+  local topic="${REFLEX_CMD_VEL_TOPIC:-/diff_drive_controller/cmd_vel}"
+  local rate="${REFLEX_STOP_RATE_HZ:-30}"
+  local seconds="${REFLEX_STOP_SECONDS:-0.35}"
+
+  # Only if topic exists (avoid errors when controller not running)
+  if ! ros2 topic list 2>/dev/null | grep -qx "${topic}"; then
+    _reflex_warn "cmd_vel topic not found: ${topic} (skip stop)"
     return 0
   fi
 
-  reflex_pause
+  _reflex_info "STOP: publishing zero Twist -> ${topic} (${seconds}s @ ${rate}Hz)"
+  ros2 topic pub -r "${rate}" "${topic}" geometry_msgs/msg/Twist \
+    "{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 0.0}}" \
+    >/dev/null 2>&1 &
 
-  _reflex_info "Applying staged params to $(__reflex_c "35" "${REFLEX_TUNER_NODE}") ..."
-  local k
-  for k in "${!__REFLEX_STAGED_PARAMS[@]}"; do
-    if ros2 param set "${REFLEX_TUNER_NODE}" "$k" "${__REFLEX_STAGED_PARAMS[$k]}" >/dev/null; then
-      _reflex_ok "Applied: $k=${__REFLEX_STAGED_PARAMS[$k]}"
-    else
-      _reflex_err "FAILED applying: $k"
-      reflex_resume
-      return 1
-    fi
-  done
+  local pub_pid=$!
+  sleep "${seconds}" 2>/dev/null || true
+  kill "${pub_pid}" >/dev/null 2>&1 || true
+  wait "${pub_pid}" >/dev/null 2>&1 || true
+  _reflex_ok "STOP: zero cmd_vel sent."
+}
 
-  __REFLEX_STAGED_PARAMS=()
-  _reflex_ok "All staged params applied."
+# ----------------------------
+# [7.8] Global reset (PID integrators cleared) - std_srvs/Trigger on /reset
+# ----------------------------
+reflex_reset_global() {
+  local srv="${REFLEX_GLOBAL_RESET_SRV:-/reset}"
+  _reflex_info "Calling global reset: ${srv} (std_srvs/srv/Trigger)"
+  ros2 service call "${srv}" std_srvs/srv/Trigger "{}" >/dev/null 2>&1 \
+    && _reflex_ok "Global reset done." \
+    || { _reflex_err "Global reset FAILED (${srv})"; return 1; }
+}
+
+# ----------------------------
+# [8] Apply Staged Params (pause -> set -> reset -> apply_gains -> apply_pose -> stop -> resume)
+# - If called with NO staged params: still do (pause -> reset -> apply_gains -> apply_pose -> stop -> resume)
+# ----------------------------
+reflex_apply() {
+  local had_params=1
+  if [[ ${#__REFLEX_STAGED_PARAMS[@]} -eq 0 ]]; then
+    had_params=0
+    _reflex_info "No staged params. Will still: pause -> global_reset -> apply_gains -> apply_pose -> stop -> resume"
+  fi
+
+  reflex_pause || { _reflex_err "Failed to pause"; return 1; }
+
+  # Apply staged params if present
+  if [[ $had_params -eq 1 ]]; then
+    _reflex_info "Applying staged params to $(__reflex_c "35" "${REFLEX_TUNER_NODE}") ..."
+    local k
+    for k in "${!__REFLEX_STAGED_PARAMS[@]}"; do
+      if ros2 param set "${REFLEX_TUNER_NODE}" "$k" "${__REFLEX_STAGED_PARAMS[$k]}" >/dev/null; then
+        _reflex_ok "Applied: $k=${__REFLEX_STAGED_PARAMS[$k]}"
+      else
+        _reflex_err "FAILED applying: $k"
+        reflex_stop   >/dev/null 2>&1 || true
+        reflex_resume >/dev/null 2>&1 || true
+        return 1
+      fi
+    done
+
+    __REFLEX_STAGED_PARAMS=()
+    _reflex_ok "All staged params applied."
+  fi
 
   reflex_apply_gains_srv || { reflex_resume; return 1; }
   reflex_reset_pid       || { reflex_resume; return 1; }
   reflex_apply_pose_srv  || { reflex_resume; return 1; }
 
-  reflex_resume
+  # Safety: stop before resuming to avoid a “jump” on unpause
+  reflex_stop >/dev/null 2>&1 || true
+
+  reflex_resume || { _reflex_err "Failed to resume"; return 1; }
 }
 
 # ----------------------------
@@ -416,4 +465,18 @@ $(__reflex_c '36' "REFLEX (container) helpers:")
     export REFLEX_DEBUG=1    -> enable debug prints (limited)
 
 EOF
+}
+
+# ----------------------------
+# [11] Slow down simulation
+# ----------------------------
+
+reflex_slow() {
+  local factor="${1:-0.3}"
+  gz service -s /world/reflex_world/set_physics \
+    --reqtype gz.msgs.Physics \
+    --reptype gz.msgs.Boolean \
+    --req "real_time_factor: ${factor}" >/dev/null 2>&1 \
+    && _reflex_ok "Simulation slowed (RTF=${factor})" \
+    || _reflex_warn "Failed to set real_time_factor."
 }
