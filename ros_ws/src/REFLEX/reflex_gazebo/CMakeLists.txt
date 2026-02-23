@@ -17,6 +17,17 @@ install(DIRECTORY urdf/
 install(DIRECTORY worlds/
   DESTINATION share/${PROJECT_NAME}/worlds)
 
+install(PROGRAMS
+  scripts/reset_manager.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(PROGRAMS
+  scripts/reflex_sim_bootstrapper.py
+  scripts/reflex_reset_on_world_reset.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)

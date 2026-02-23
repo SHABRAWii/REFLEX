@@ -31,6 +31,7 @@ setup(
           'reflex_balance_pid = reflex_control.balance_pid:main',
           'reflex_status_dashboard = reflex_control.status_dashboard:main',
           'reflex_pid_tuner = reflex_control.pid_tuner:main',
+          'reflex_debug_plotter = reflex_control.reflex_debug_plotter:main',
         ],
     },
 )
