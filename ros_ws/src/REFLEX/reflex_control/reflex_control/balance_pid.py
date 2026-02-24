@@ -380,7 +380,10 @@ class ReflexBalancePID(Node):
             self.theta_set = theta_set
 
         # INNER loop
-        e_theta = self.theta - self.theta_set
+        if abs(self.theta - self.theta_set) > 0.0174:
+            e_theta = self.theta - self.theta_set
+        else:
+            e_theta = 0.0
         u, t_p, t_i, t_d, t_derr, t_uncl, t_iterm, t_out_clamp, t_i_clamp = self.pid_t.step_terms(e_theta, dt)
 
         # turning term from yaw_rate_set (rad/s) => wheel differential (rad/s)
