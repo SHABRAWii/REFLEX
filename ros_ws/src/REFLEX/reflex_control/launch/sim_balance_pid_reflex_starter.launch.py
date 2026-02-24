@@ -75,17 +75,17 @@ def generate_launch_description():
             'theta_max': 1.5,
             'w_max': 3000.0,
             'inner_rate_hz': 250.0,
-            'outer_rate_hz': 50.0,
+            'outer_rate_hz': 250.0,
 
-            'v_kp': 0.5,
-            'v_ki': 0.125,
-            'v_kd': 0.0,
-            'v_i_max': 0.3,
+            'v_kp': 0.54,
+            'v_ki': 0.2,
+            'v_kd': -0.001, #0.001
+            'v_i_max': 0.3, 
             'v_out_max': 1.5,
 
-            't_kp': 1.7,
-            't_ki': 0.5,
-            't_kd': 0.0,
+            't_kp': 1.8,
+            't_ki': 0.05,
+            't_kd': -0.000, # 0.03
             't_i_max': 5.0,
             't_out_max': 5.0,
         }]
