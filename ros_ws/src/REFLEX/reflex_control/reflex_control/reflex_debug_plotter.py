@@ -66,6 +66,7 @@ class ReflexDebugPlotter(Node):
         # ---- Data buffers ----
         self.t = deque(maxlen=self.max_points)
         self.theta = deque(maxlen=self.max_points)  # measured output
+        self.theta_set = deque(maxlen=self.max_points)   # outer PID (clamped)
         self.u = deque(maxlen=self.max_points)      # pid output
         self.have_dbg = False
 
@@ -79,8 +80,9 @@ class ReflexDebugPlotter(Node):
         self.ax.set_xlabel("Sim time (s)")
         self.ax.set_ylabel("Value (scaled)")
 
-        (self.l_theta,) = self.ax.plot([], [], label="theta (scaled)")
-        (self.l_u,) = self.ax.plot([], [], label="u (scaled)")
+        (self.l_theta,) = self.ax.plot([], [], label="theta (measured)", linewidth=2)
+        (self.l_theta_set,) = self.ax.plot([], [], color="red", linewidth=2, label="theta_set (outer PID)")
+        (self.l_u,) = self.ax.plot([], [], label="u (PID output)", linewidth=1.5)
         self.l_zero = self.ax.axhline(0.0, linewidth=1, linestyle="--", label="setpoint=0")
 
         self.ax.legend(loc="upper right")
@@ -126,13 +128,15 @@ class ReflexDebugPlotter(Node):
         # Mapping (from your dashboard)
         # v_avg, v_set, theta, theta_set, u, wL_cmd, wR_cmd = d[0:7]
         theta = d[2]
+        theta_set = d[3] 
         u = d[4]
 
-        if not isfinite(theta) or not isfinite(u):
+        if not isfinite(theta) or not isfinite(u) or not isfinite(theta_set):
             return
 
         self.t.append(self.sim_t)
         self.theta.append(theta * self.theta_scale)
+        self.theta_set.append(theta_set * self.theta_scale)
         self.u.append(u * self.u_scale)
 
         self.have_dbg = True
@@ -146,12 +150,14 @@ class ReflexDebugPlotter(Node):
         while self.t and self.t[0] < t_min:
             self.t.popleft()
             self.theta.popleft()
+            self.theta_set.popleft()
             self.u.popleft()
 
     def _set_symmetric_ylim(self):
         """Center y=0 and make +top == -bottom based on max abs of visible data."""
         vals = []
         vals.extend(self.theta)
+        vals.extend(self.theta_set)
         vals.extend(self.u)
 
         # Filter finite
@@ -180,6 +186,7 @@ class ReflexDebugPlotter(Node):
 
         t = list(self.t)
         self.l_theta.set_data(t, list(self.theta))
+        self.l_theta_set.set_data(t, list(self.theta_set))
         self.l_u.set_data(t, list(self.u))
 
         # x-limits follow window
