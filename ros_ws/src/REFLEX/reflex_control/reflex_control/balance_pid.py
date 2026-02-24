@@ -380,7 +380,7 @@ class ReflexBalancePID(Node):
             self.theta_set = theta_set
 
         # INNER loop
-        if abs(self.theta - self.theta_set) > 0.0174:
+        if abs(self.theta - self.theta_set) > 0:
             e_theta = self.theta - self.theta_set
         else:
             e_theta = 0.0
