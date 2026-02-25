@@ -20,8 +20,9 @@ def generate_launch_description():
     spawn_pitch = LaunchConfiguration('spawn_pitch')
     spawn_yaw = LaunchConfiguration('spawn_yaw')
 
-    controller_load_delay = LaunchConfiguration('controller_load_delay')
-    unpause_delay = LaunchConfiguration('unpause_delay')
+    slow_factor = LaunchConfiguration('slow_factor')
+    restore_factor = LaunchConfiguration('restore_factor')
+    restore_factor_delay = LaunchConfiguration('restore_factor_delay')
     plotter = Node(
         package='reflex_control',
         executable='reflex_debug_plotter',
@@ -55,8 +56,9 @@ def generate_launch_description():
             'spawn_pitch': spawn_pitch,
             'spawn_yaw': spawn_yaw,
 
-            'controller_load_delay': controller_load_delay,
-            'unpause_delay': unpause_delay,
+            'slow_factor': slow_factor,
+            'restore_factor': restore_factor,
+            'restore_factor_delay': restore_factor_delay,
         }.items()
     )
 
@@ -137,7 +139,7 @@ def generate_launch_description():
         # ---- Sim args (defaults match your new setup) ----
         DeclareLaunchArgument('world', default_value='reflex_starter.sdf'),
         DeclareLaunchArgument('headless', default_value='False'),
-        DeclareLaunchArgument('paused', default_value='True'),
+        DeclareLaunchArgument('paused', default_value='False'),
 
         DeclareLaunchArgument('spawn_name', default_value='reflex'),
         DeclareLaunchArgument('spawn_x', default_value='0.0'),
@@ -147,12 +149,13 @@ def generate_launch_description():
         DeclareLaunchArgument('spawn_pitch', default_value='0.0'),
         DeclareLaunchArgument('spawn_yaw', default_value='0.0'),
 
-        DeclareLaunchArgument('controller_load_delay', default_value='3.0'),
-        DeclareLaunchArgument('unpause_delay', default_value='6.0'),
+        DeclareLaunchArgument('slow_factor', default_value='0.02'),
+        DeclareLaunchArgument('restore_factor', default_value='1.0'),
+        DeclareLaunchArgument('restore_factor_delay', default_value='15.0'),
 
         # ---- Start everything ----
+        plotter,
         sim,
         controller,
         tuner,
-        # plotter,
     ])
