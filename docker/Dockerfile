@@ -36,7 +36,7 @@ RUN pipx ensurepath \
  && pipx install rosdep
 
 # Python libraries for GUI/debug tools
-RUN python3 -m pip install --no-cache-dir \
+RUN python3 -m pip install --no-cache-dir --break-system-packages \
     pyqtgraph \
     PySide6
 
