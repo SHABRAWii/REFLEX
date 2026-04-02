@@ -5,11 +5,10 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
-    # New controller for custom PID effort commands
-    leg_effort_controller:
+    leg_velocity_controller:
       type: velocity_controllers/JointGroupVelocityController
 
-leg_effort_controller:
+leg_velocity_controller:
   ros__parameters:
     joints:
       - Left_Hip_joint

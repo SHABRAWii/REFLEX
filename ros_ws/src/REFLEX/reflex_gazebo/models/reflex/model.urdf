@@ -57,8 +57,8 @@
     <parent link="base_link"/>
     <child link="Left_Hip"/>
     <!-- ! NOTE: SolidWorks exported axis="0 0 0" (invalid). Fix axis based on your hinge. -->
-    <axis xyz="0 0 1"/>
-    <limit effort="0" lower="0" upper="0" velocity="0"/>
+    <axis xyz="-1 0 0"/>
+    <limit effort="11.0" lower="-1.5708" upper="1.5708" velocity="43.98"/>
   </joint>
   <!-- Left Knee link -->
   <link name="Left_Knee">
@@ -89,8 +89,8 @@
     <parent link="Left_Hip"/>
     <child link="Left_Knee"/>
     <!-- ! NOTE: SolidWorks exported axis="0 0 0" (invalid). Fix axis based on your hinge. -->
-    <axis xyz="0 0 1"/>
-    <limit effort="0" lower="0" upper="0" velocity="0"/>
+    <axis xyz="-1 0 0"/>
+    <limit effort="11.0" lower="-1.5708" upper="1.5708" velocity="43.98"/>
   </joint>
   <!-- Left Wheel link -->
   <link name="Left_Wheel">
@@ -108,7 +108,7 @@
         <color rgba="0.79216 0.81961 0.93333 1"/>
       </material>
     </visual>
-    <collision name="Left_Wheel_collision">
+    <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Left_Wheel.STL"/>
@@ -116,7 +116,7 @@
     </collision>
   </link>
   <!-- Left Wheel joint -->
-  <joint name="Left_Wheel_Joint" type="continuous">
+  <joint name="Left_Wheel_Joint" type="fixed">
     <origin rpy="-1.5708 -0.91317 -1.5708" xyz="0.04 -0.2 0"/>
     <parent link="Left_Knee"/>
     <child link="Left_Wheel"/>
@@ -152,7 +152,7 @@
     <child link="Right_Hip"/>
     <axis xyz="1 0 0"/>
     <!-- NOTE: SolidWorks exported 0/0 limits. Replace with real joint limits. -->
-    <limit effort="0" lower="0" upper="0" velocity="0"/>
+    <limit effort="11.0" lower="-1.5708" upper="1.5708" velocity="43.98"/>
   </joint>
   <!-- Right Knee link -->
   <link name="Right_Knee">
@@ -183,8 +183,8 @@
     <parent link="Right_Hip"/>
     <child link="Right_Knee"/>
     <!-- ! NOTE: SolidWorks exported axis="0 0 0" (invalid). Fix axis based on your hinge. -->
-    <axis xyz="0 0 1"/>
-    <limit effort="0" lower="0" upper="0" velocity="0"/>
+    <axis xyz="1 0 0"/>
+    <limit effort="11.0" lower="-1.5708" upper="1.5708" velocity="43.98"/>
   </joint>
   <!-- Right Wheel link -->
   <link name="Right_Wheel">
@@ -202,7 +202,7 @@
         <color rgba="0.79216 0.81961 0.93333 1"/>
       </material>
     </visual>
-    <collision name="Right_Wheel_collision">
+    <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Right_Wheel.STL"/>
@@ -210,7 +210,7 @@
     </collision>
   </link>
   <!-- Right Wheel joint -->
-  <joint name="Right_Wheel_Joint" type="continuous">
+  <joint name="Right_Wheel_Joint" type="fixed">
     <origin rpy="1.5708 -0.91317 1.5708" xyz="0.04 -0.2 0"/>
     <parent link="Right_Knee"/>
     <child link="Right_Wheel"/>
@@ -283,15 +283,25 @@
     <hardware>
       <plugin>gz_ros2_control/GazeboSimSystem</plugin>
     </hardware>
-    <!-- Left wheel joint -->
-    <joint name="Left_Wheel_Joint">
+    <joint name="Left_Hip_joint">
       <command_interface name="velocity"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <!-- Right wheel joint -->
-    <joint name="Right_Wheel_Joint">
+    <joint name="Left_Knee_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="Right_Hip_Joint">
+      <command_interface name="velocity"/>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="Right_Knee_joint">
       <command_interface name="velocity"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>

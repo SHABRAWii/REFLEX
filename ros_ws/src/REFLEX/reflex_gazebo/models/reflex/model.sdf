@@ -97,12 +97,12 @@
       <parent>base_link</parent>
       <child>Left_Hip</child>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz>-1 0 0</xyz>
         <limit>
-          <lower>0</lower>
-          <upper>0</upper>
-          <effort>0</effort>
-          <velocity>0</velocity>
+          <lower>-1.5708</lower>
+          <upper>1.5708</upper>
+          <effort>11</effort>
+          <velocity>43.979999999999997</velocity>
         </limit>
         <dynamics>
           <spring_reference>0</spring_reference>
@@ -152,12 +152,12 @@
       <parent>Left_Hip</parent>
       <child>Left_Knee</child>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz>-1 0 0</xyz>
         <limit>
-          <lower>0</lower>
-          <upper>0</upper>
-          <effort>0</effort>
-          <velocity>0</velocity>
+          <lower>-1.5708</lower>
+          <upper>1.5708</upper>
+          <effort>11</effort>
+          <velocity>43.979999999999997</velocity>
         </limit>
         <dynamics>
           <spring_reference>0</spring_reference>
@@ -168,15 +168,15 @@
     <link name='Left_Knee'>
       <pose relative_to='Left_Knee_joint'>0 0 0 0 0 0</pose>
       <inertial>
-        <pose>0.015086 -0.090977000000000002 0 0 0 0</pose>
-        <mass>0.77383999999999997</mass>
+        <pose>0.036687641615128067 -0.13463704122913489 -1.223800757943029e-06 0 0 0</pose>
+        <mass>1.29074</mass>
         <inertia>
-          <ixx>0.0056427999999999999</ixx>
-          <ixy>1.1442e-05</ixy>
-          <ixz>-8.411e-19</ixz>
-          <iyy>0.00055296999999999996</iyy>
-          <iyz>-3.8218e-18</iyz>
-          <izz>0.0052588000000000001</izz>
+          <ixx>0.011710523842638621</ixx>
+          <ixy>0.0018338676502242461</ixy>
+          <ixz>7.5826248317948223e-08</ixz>
+          <iyy>0.0027107658864956442</iyy>
+          <iyz>-1.049625657153087e-07</iyz>
+          <izz>0.011100006592430061</izz>
         </inertia>
       </inertial>
       <collision name='Left_Knee_collision'>
@@ -188,52 +188,8 @@
           </mesh>
         </geometry>
       </collision>
-      <visual name='Left_Knee_visual'>
-        <pose>0 0 0 0 0 0</pose>
-        <geometry>
-          <mesh>
-            <scale>1 1 1</scale>
-            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Left_Knee.STL</uri>
-          </mesh>
-        </geometry>
-        <material>
-          <diffuse>0.872549057 0.872549057 0.872549057 1</diffuse>
-          <ambient>0.872549057 0.872549057 0.872549057 1</ambient>
-        </material>
-      </visual>
-    </link>
-    <joint name='Left_Wheel_Joint' type='revolute'>
-      <pose relative_to='Left_Knee'>0.040000000000000001 -0.20000000000000001 0 -1.5708 -0.91317000000000015 -1.5708</pose>
-      <parent>Left_Knee</parent>
-      <child>Left_Wheel</child>
-      <axis>
-        <xyz>0 0 1</xyz>
-        <limit>
-          <lower>-inf</lower>
-          <upper>inf</upper>
-        </limit>
-        <dynamics>
-          <spring_reference>0</spring_reference>
-          <spring_stiffness>0</spring_stiffness>
-        </dynamics>
-      </axis>
-    </joint>
-    <link name='Left_Wheel'>
-      <pose relative_to='Left_Wheel_Joint'>0 0 0 0 0 0</pose>
-      <inertial>
-        <pose>-2.7522999999999999e-06 1.3291999999999999e-06 0.029027000000000001 0 0 0</pose>
-        <mass>0.51690000000000003</mass>
-        <inertia>
-          <ixx>0.0012561</ixx>
-          <ixy>6.7856999999999998e-09</ixy>
-          <ixz>2.8567e-08</ixz>
-          <iyy>0.0012561</iyy>
-          <iyz>-7.6346000000000001e-09</iyz>
-          <izz>0.0023842999999999998</izz>
-        </inertia>
-      </inertial>
-      <collision name='Left_Wheel_collision'>
-        <pose>0 0 0 0 0 0</pose>
+      <collision name='Left_Knee_fixed_joint_lump__Left_Wheel_collision_1'>
+        <pose>0.040000000000000001 -0.20000000000000001 0 -1.5708 -0.91317000000000015 -1.5708</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -252,8 +208,21 @@
           </friction>
         </surface>
       </collision>
-      <visual name='Left_Wheel_visual'>
+      <visual name='Left_Knee_visual'>
         <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Left_Knee.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.872549057 0.872549057 0.872549057 1</diffuse>
+          <ambient>0.872549057 0.872549057 0.872549057 1</ambient>
+        </material>
+      </visual>
+      <visual name='Left_Knee_fixed_joint_lump__Left_Wheel_visual_1'>
+        <pose>0.040000000000000001 -0.20000000000000001 0 -1.5708 -0.91317000000000015 -1.5708</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -273,10 +242,10 @@
       <axis>
         <xyz>1 0 0</xyz>
         <limit>
-          <lower>0</lower>
-          <upper>0</upper>
-          <effort>0</effort>
-          <velocity>0</velocity>
+          <lower>-1.5708</lower>
+          <upper>1.5708</upper>
+          <effort>11</effort>
+          <velocity>43.979999999999997</velocity>
         </limit>
         <dynamics>
           <spring_reference>0</spring_reference>
@@ -326,12 +295,12 @@
       <parent>Right_Hip</parent>
       <child>Right_Knee</child>
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz>1 0 0</xyz>
         <limit>
-          <lower>0</lower>
-          <upper>0</upper>
-          <effort>0</effort>
-          <velocity>0</velocity>
+          <lower>-1.5708</lower>
+          <upper>1.5708</upper>
+          <effort>11</effort>
+          <velocity>43.979999999999997</velocity>
         </limit>
         <dynamics>
           <spring_reference>0</spring_reference>
@@ -342,15 +311,15 @@
     <link name='Right_Knee'>
       <pose relative_to='Right_Knee_joint'>0 0 0 0 0 0</pose>
       <inertial>
-        <pose>0.015086 -0.090977000000000002 -3.8858e-16 0 0 0</pose>
-        <mass>0.77383999999999997</mass>
+        <pose>0.036687641799812598 -0.13468660686080491 -6.320424129652684e-05 0 0 0</pose>
+        <mass>1.29074</mass>
         <inertia>
-          <ixx>0.0056427999999999999</ixx>
-          <ixy>1.1442e-05</ixy>
-          <ixz>-1.8135e-18</ixz>
-          <iyy>0.00055296999999999996</iyy>
-          <iyz>-1.297e-17</iyz>
-          <izz>0.0052588000000000001</izz>
+          <ixx>0.01171889961606829</ixx>
+          <ixy>0.0018359863728498499</ixy>
+          <ixz>2.653649209714424e-06</ixz>
+          <iyy>0.0027107604522510959</iyy>
+          <iyz>-5.3400681929556613e-06</iyz>
+          <izz>0.01110838783134202</izz>
         </inertia>
       </inertial>
       <collision name='Right_Knee_collision'>
@@ -362,52 +331,8 @@
           </mesh>
         </geometry>
       </collision>
-      <visual name='Right_Knee_visual'>
-        <pose>0 0 0 0 0 0</pose>
-        <geometry>
-          <mesh>
-            <scale>1 1 1</scale>
-            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Right_Knee.STL</uri>
-          </mesh>
-        </geometry>
-        <material>
-          <diffuse>0.872549057 0.872549057 0.872549057 1</diffuse>
-          <ambient>0.872549057 0.872549057 0.872549057 1</ambient>
-        </material>
-      </visual>
-    </link>
-    <joint name='Right_Wheel_Joint' type='revolute'>
-      <pose relative_to='Right_Knee'>0.040000000000000001 -0.20000000000000001 0 1.5708 -0.91317000000000015 1.5708</pose>
-      <parent>Right_Knee</parent>
-      <child>Right_Wheel</child>
-      <axis>
-        <xyz>0 0 -1</xyz>
-        <limit>
-          <lower>-inf</lower>
-          <upper>inf</upper>
-        </limit>
-        <dynamics>
-          <spring_reference>0</spring_reference>
-          <spring_stiffness>0</spring_stiffness>
-        </dynamics>
-      </axis>
-    </joint>
-    <link name='Right_Wheel'>
-      <pose relative_to='Right_Wheel_Joint'>0 0 0 0 0 0</pose>
-      <inertial>
-        <pose>-0.00020036000000000001 1.3304e-06 0.029027000000000001 0 0 0</pose>
-        <mass>0.51690000000000003</mass>
-        <inertia>
-          <ixx>0.0012561</ixx>
-          <ixy>6.8223999999999999e-09</ixy>
-          <ixz>2.8546e-08</ixz>
-          <iyy>0.0012561</iyy>
-          <iyz>-7.6288999999999996e-09</iyz>
-          <izz>0.0023842999999999998</izz>
-        </inertia>
-      </inertial>
-      <collision name='Right_Wheel_collision'>
-        <pose>0 0 0 0 0 0</pose>
+      <collision name='Right_Knee_fixed_joint_lump__Right_Wheel_collision_1'>
+        <pose>0.040000000000000001 -0.20000000000000001 0 1.5708 -0.91317000000000015 1.5708</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -426,8 +351,21 @@
           </friction>
         </surface>
       </collision>
-      <visual name='Right_Wheel_visual'>
+      <visual name='Right_Knee_visual'>
         <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>/ws/ros_ws/install/reflex_descriptions/share/reflex_descriptions/models/Right_Knee.STL</uri>
+          </mesh>
+        </geometry>
+        <material>
+          <diffuse>0.872549057 0.872549057 0.872549057 1</diffuse>
+          <ambient>0.872549057 0.872549057 0.872549057 1</ambient>
+        </material>
+      </visual>
+      <visual name='Right_Knee_fixed_joint_lump__Right_Wheel_visual_1'>
+        <pose>0.040000000000000001 -0.20000000000000001 0 1.5708 -0.91317000000000015 1.5708</pose>
         <geometry>
           <mesh>
             <scale>1 1 1</scale>
@@ -455,5 +393,17 @@
       <static_update_frequency>1</static_update_frequency>
     </plugin>
     <plugin name='gz::sim::systems::JointStatePublisher' filename='gz-sim-joint-state-publisher-system'/>
+    <frame name='Left_Wheel_Joint' attached_to='Left_Knee'>
+      <pose>0.040000000000000001 -0.20000000000000001 0 -1.5708 -0.91317000000000015 -1.5708</pose>
+    </frame>
+    <frame name='Left_Wheel' attached_to='Left_Wheel_Joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='Right_Wheel_Joint' attached_to='Right_Knee'>
+      <pose>0.040000000000000001 -0.20000000000000001 0 1.5708 -0.91317000000000015 1.5708</pose>
+    </frame>
+    <frame name='Right_Wheel' attached_to='Right_Wheel_Joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
   </model>
 </sdf>
