@@ -33,9 +33,12 @@ ENV PATH="/root/.local/bin:${PATH}"
 # vcstool + rosdep via pipx 
 RUN pipx ensurepath \
  && pipx install vcstool \
- && pipx install rosdep \
- && pipx install pyqtgraph \
- && pipx install PySide6
+ && pipx install rosdep
+
+# Python libraries for GUI/debug tools
+RUN python3 -m pip install --no-cache-dir \
+    pyqtgraph \
+    PySide6
 
 RUN locale-gen en_US en_US.UTF-8 && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 ENV LANG=en_US.UTF-8
