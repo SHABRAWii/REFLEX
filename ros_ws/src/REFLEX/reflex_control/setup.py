@@ -33,6 +33,8 @@ setup(
           'reflex_pid_tuner = reflex_control.pid_tuner:main',
           'reflex_debug_plotter = reflex_control.reflex_debug_plotter:main',
           'reflex_status_dashboard_ui = reflex_control.reflex_status_dashboard_ui:main',
+          'stance_controller = reflex_control.stance_controller:main',
+
         ],
     },
 )

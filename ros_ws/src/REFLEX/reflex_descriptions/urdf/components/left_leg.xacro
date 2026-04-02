@@ -36,8 +36,8 @@
       <parent link="${parent}"/>
       <child link="${prefix}Left_Hip"/>
       <!-- ! NOTE: SolidWorks exported axis="0 0 0" (invalid). Fix axis based on your hinge. -->
-      <axis xyz="0 0 1"/>
-      <limit lower="0" upper="0" effort="0" velocity="0"/>
+      <axis xyz="-1 0 0"/>
+      <limit lower="-1.5708" upper="1.5708" effort="11.0" velocity="43.98"/>
     </joint>
 
     <!-- Left Knee link -->
@@ -73,8 +73,8 @@
       <parent link="${prefix}Left_Hip"/>
       <child link="${prefix}Left_Knee"/>
       <!-- ! NOTE: SolidWorks exported axis="0 0 0" (invalid). Fix axis based on your hinge. -->
-      <axis xyz="0 0 1"/>
-      <limit lower="0" upper="0" effort="0" velocity="0"/>
+      <axis xyz="-1 0 0"/>
+      <limit lower="-1.5708" upper="1.5708" effort="11.0" velocity="43.98"/>
     </joint>
 
     <!-- Left Wheel link -->
@@ -105,7 +105,7 @@
     </link>
 
     <!-- Left Wheel joint -->
-    <joint name="${prefix}Left_Wheel_Joint" type="continuous">
+    <joint name="${prefix}Left_Wheel_Joint" type="fixed">
       <origin xyz="0.04 -0.2 0" rpy="-1.5708 -0.91317 -1.5708"/>
       <parent link="${prefix}Left_Knee"/>
       <child link="${prefix}Left_Wheel"/>

@@ -103,14 +103,14 @@
       </link>
     </model>
 
-    <!-- ================= REFLEX MODEL ================= -->
+    <!-- ================= REFLEX MODEL ================= 
     <include>
       <uri>model://reflex</uri>
-      <name>reflex</name>
+      <name>reflex</name> -->
 
-      <!-- Spawn at 0.5 meters -->
+      <!-- Spawn at 0.5 meters 
       <pose>0 0 0.5 0 0 0</pose>
-    </include>
+    </include> -->
 
   </world>
 </sdf>

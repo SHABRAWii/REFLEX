@@ -5,22 +5,14 @@ controller_manager:
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
 
-    diff_drive_controller:
-      type: diff_drive_controller/DiffDriveController
+    # New controller for custom PID effort commands
+    leg_effort_controller:
+      type: velocity_controllers/JointGroupVelocityController
 
-diff_drive_controller:
+leg_effort_controller:
   ros__parameters:
-    left_wheel_names:  ["Left_Wheel_Joint"]
-    right_wheel_names: ["Right_Wheel_Joint"]
-
-    base_frame_id: base_link
-    odom_frame_id: odom
-
-    publish_odom: true
-    enable_odom_tf: true
-
-    wheel_radius: 0.06
-    wheel_separation: 0.30
-
-    use_stamped_vel: false
-    cmd_vel_timeout: 0.5
+    joints:
+      - Left_Hip_joint
+      - Left_Knee_joint
+      - Right_Hip_Joint
+      - Right_Knee_joint
