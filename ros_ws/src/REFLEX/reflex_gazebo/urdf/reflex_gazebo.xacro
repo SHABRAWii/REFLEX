@@ -5,12 +5,12 @@
 
     <!-- Optional: set wheel friction (tune later) -->
     <gazebo reference="${prefix}Left_Wheel">
-      <mu1>1.0</mu1>
+      <mu1>1.5</mu1>
       <mu2>1.0</mu2>
     </gazebo>
 
     <gazebo reference="${prefix}Right_Wheel">
-      <mu1>1.0</mu1>
+      <mu1>1.5</mu1>
       <mu2>1.0</mu2>
     </gazebo>
 
@@ -79,6 +79,7 @@
         <command_interface name="velocity"/>
         <state_interface name="position"/>
         <state_interface name="velocity"/>
+        <state_interface name="effort"/>
       </joint>
 
       <!-- Right wheel joint -->
@@ -86,6 +87,7 @@
         <command_interface name="velocity"/>
         <state_interface name="position"/>
         <state_interface name="velocity"/>
+        <state_interface name="effort"/>
       </joint>
     </ros2_control>
 

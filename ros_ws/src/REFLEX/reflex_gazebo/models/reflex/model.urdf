@@ -218,25 +218,13 @@
   </joint>
   <!-- <xacro:reflex_sensors prefix="${prefix}" parent="${prefix}base_link" /> TODO: Add Sensors -->
   <!-- Optional: set wheel friction (tune later) -->
-  <gazebo reference="Left_Wheel_collision">
-    <surface>
-      <friction>
-        <ode>
-          <mu>30</mu>
-          <mu2>1</mu2>
-        </ode>
-      </friction>
-    </surface>
+  <gazebo reference="Left_Wheel">
+    <mu1>1.5</mu1>
+    <mu2>1.0</mu2>
   </gazebo>
-  <gazebo reference="Right_Wheel_collision">
-    <surface>
-      <friction>
-        <ode>
-          <mu>30</mu>
-          <mu2>1</mu2>
-        </ode>
-      </friction>
-    </surface>
+  <gazebo reference="Right_Wheel">
+    <mu1>1.5</mu1>
+    <mu2>1.0</mu2>
   </gazebo>
   <!-- IMU sensor on base_link (Gazebo Sim / Harmonic) -->
   <gazebo reference="base_link">
@@ -300,12 +288,14 @@
       <command_interface name="velocity"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
     <!-- Right wheel joint -->
     <joint name="Right_Wheel_Joint">
       <command_interface name="velocity"/>
       <state_interface name="position"/>
       <state_interface name="velocity"/>
+      <state_interface name="effort"/>
     </joint>
   </ros2_control>
   <!-- Gazebo plugin that exposes ros2_control to Gazebo Harmonic -->

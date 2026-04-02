@@ -480,3 +480,91 @@ reflex_slow() {
     && _reflex_ok "Simulation slowed (RTF=${factor})" \
     || _reflex_warn "Failed to set real_time_factor."
 }
+
+
+# ----------------------------
+# [12] Generate model.sdf from URDF/Xacro
+# ----------------------------
+reflex_sdf() {
+  set -euo pipefail
+
+  local DRY_RUN=0
+  local SRC=""
+  local OUTDIR=""
+
+  # Defaults for your container layout
+  SRC="${REFLEX_WS}/ros_ws/src/REFLEX/reflex_gazebo/urdf/reflex_gazebo.urdf.xacro"
+  OUTDIR="${REFLEX_WS}/ros_ws/src/REFLEX/reflex_gazebo/models/reflex"
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --dry-run) DRY_RUN=1; shift ;;
+      --src) SRC="$2"; shift 2 ;;
+      --outdir) OUTDIR="$2"; shift 2 ;;
+      -h|--help)
+        cat <<EOF
+Usage: reflex_sdf [--src <xacro>] [--outdir <dir>] [--dry-run]
+
+Defaults:
+  --src    ${REFLEX_WS}/ros_ws/src/REFLEX/reflex_gazebo/urdf/reflex_gazebo.urdf.xacro
+  --outdir ${REFLEX_WS}/ros_ws/src/REFLEX/reflex_gazebo/models/reflex
+
+Outputs:
+  <outdir>/model.urdf
+  <outdir>/model.sdf
+EOF
+        return 0
+        ;;
+      *)
+        _reflex_err "reflex_sdf: unknown arg: $1"
+        return 2
+        ;;
+    esac
+  done
+
+  # Tools
+  if ! command -v xacro >/dev/null 2>&1; then
+    _reflex_err "xacro not found. Install: ros-${ROS_DISTRO:-jazzy}-xacro"
+    return 1
+  fi
+  if ! command -v gz >/dev/null 2>&1; then
+    _reflex_err "gz not found (Gazebo CLI missing)."
+    return 1
+  fi
+
+  # Inputs
+  if [[ ! -f "$SRC" ]]; then
+    _reflex_err "Xacro not found: $SRC"
+    return 1
+  fi
+
+  mkdir -p "$OUTDIR"
+  local URDF_OUT="${OUTDIR}/model.urdf"
+  local SDF_OUT="${OUTDIR}/model.sdf"
+
+  # Make sure Gazebo can find local models (you already export this globally)
+  export GZ_SIM_RESOURCE_PATH="${REFLEX_WS}/ros_ws/src/REFLEX/reflex_gazebo/models:${GZ_SIM_RESOURCE_PATH:-}"
+
+  if [[ $DRY_RUN -eq 1 ]]; then
+    _reflex_info "DRY RUN:"
+    echo "  xacro \"$SRC\" > \"$URDF_OUT\""
+    echo "  gz sdf -p \"$URDF_OUT\" > \"$SDF_OUT\""
+    return 0
+  fi
+
+  _reflex_info "Generating URDF: $(__reflex_c "35" "$URDF_OUT")"
+  xacro "$SRC" > "$URDF_OUT"
+
+  _reflex_info "Generating SDF:  $(__reflex_c "35" "$SDF_OUT")"
+  gz sdf -p "$URDF_OUT" > "$SDF_OUT"
+
+  # Quick sanity check: file not empty + contains <sdf
+  if [[ ! -s "$SDF_OUT" ]] || ! grep -q "<sdf" "$SDF_OUT"; then
+    _reflex_err "Generated SDF looks invalid/empty: $SDF_OUT"
+    return 1
+  fi
+
+  _reflex_ok "SDF generated OK."
+  _reflex_ok "  URDF: $URDF_OUT"
+  _reflex_ok "  SDF : $SDF_OUT"
+}
