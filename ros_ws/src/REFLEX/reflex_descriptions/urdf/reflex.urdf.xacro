@@ -17,11 +17,5 @@
   <xacro:reflex_right_leg prefix="${prefix}" parent="${prefix}base_link" />
   <!-- <xacro:reflex_sensors prefix="${prefix}" parent="${prefix}base_link" /> TODO: Add Sensors -->
 
-  <link name="world"/>
-  <joint name="test_stand_joint" type="fixed">
-    <origin xyz="0 0 1.0" rpy="0 0 0"/>
-    <parent link="world"/>
-    <child link="${prefix}base_link"/>
-  </joint>
 
 </robot>

@@ -75,17 +75,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # NEW: Spawn robot dynamically from the ROS 2 /robot_description topic
-    spawn_robot = Node(
-        package='ros_gz_sim',
-        executable='create',
-        arguments=[
-            '-topic', 'robot_description',
-            '-name', 'reflex'
-        ],
-        output='screen'
-    )
-
     # Load controllers
     load_controllers = [
         ExecuteProcess(
@@ -155,7 +144,6 @@ def generate_launch_description():
         gz_cmd_paused,
         bridge,
         rsp,
-        spawn_robot,
         *load_controllers,
         slow_physics,
         restore_physics,
