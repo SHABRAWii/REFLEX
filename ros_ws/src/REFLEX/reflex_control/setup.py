@@ -34,6 +34,8 @@ setup(
           'reflex_debug_plotter = reflex_control.reflex_debug_plotter:main',
           'reflex_status_dashboard_ui = reflex_control.reflex_status_dashboard_ui:main',
           'stance_controller = reflex_control.stance_controller:main',
+          'joint_velocity_node = reflex_control.low_level.joint_velocity_node:main',
+          'joint_pos_to_vel_node = reflex_control.low_level.joint_pos_to_vel_node:main',
 
         ],
     },
