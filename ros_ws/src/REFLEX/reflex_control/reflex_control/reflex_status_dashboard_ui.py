@@ -74,6 +74,7 @@ class ReflexControlLabUI(Node):
 
         self.declare_parameter("left_wheel_joint", "Left_Wheel_Joint")
         self.declare_parameter("right_wheel_joint", "Right_Wheel_Joint")
+        self.declare_parameter("tracked_joint", "Left_Knee_joint")
 
         self.debug_topic = self.get_parameter("debug_topic").value
         # normalize tuner node name (strip leading slash if provided)
@@ -85,6 +86,7 @@ class ReflexControlLabUI(Node):
         self.sim_reset_thresh = float(self.get_parameter("sim_reset_threshold_sec").value)
         self.left_wheel_joint = self.get_parameter("left_wheel_joint").value
         self.right_wheel_joint = self.get_parameter("right_wheel_joint").value
+        self.tracked_joint = self.get_parameter("tracked_joint").value
 
         # ---------------- Sim time tracking ----------------
         self.sim_time = float("nan")
@@ -108,6 +110,8 @@ class ReflexControlLabUI(Node):
         self.wR = Ring(self.max_points)
         self.tauL = Ring(self.max_points)
         self.tauR = Ring(self.max_points)
+        self.joint_pos = Ring(self.max_points)
+        self.joint_vel = Ring(self.max_points)
 
         # Optional: commands from debug (d[5], d[6])
         self.wL_cmd = Ring(self.max_points)
@@ -117,6 +121,7 @@ class ReflexControlLabUI(Node):
         self.create_subscription(Clock, "/clock", self.cb_clock, qos_profile_sensor_data)
         self.create_subscription(Float64MultiArray, self.debug_topic, self.cb_debug, qos_profile_sensor_data)
         self.create_subscription(JointState, "/joint_states", self.cb_joint, qos_profile_sensor_data)
+        self.create_subscription(JointState, "/joint_states_out", self.cb_joint_tracking, qos_profile_sensor_data)
 
         # ---------------- ROS Clients (PID + services) ----------------
         # AsyncParameterClient: prefer the PID node parameter service, fall back to tuner
@@ -175,6 +180,7 @@ class ReflexControlLabUI(Node):
             self.theta, self.theta_set, self.u,
             self.v_avg, self.v_set,
             self.wL, self.wR, self.tauL, self.tauR,
+            self.joint_pos, self.joint_vel,
             self.wL_cmd, self.wR_cmd
         ]:
             ring.clear()
@@ -184,7 +190,8 @@ class ReflexControlLabUI(Node):
             self.c_theta, self.c_theta_set, self.c_u,
             self.c_vavg, self.c_vset,
             self.c_wL, self.c_wR,
-            self.c_tauL, self.c_tauR
+            self.c_tauL, self.c_tauR,
+            self.c_joint_pos, self.c_joint_vel
         ]:
             curve.setData([], [])
 
@@ -240,6 +247,21 @@ class ReflexControlLabUI(Node):
                 self.wR.append(t, msg.velocity[ri])
             if ri < len(msg.effort):
                 self.tauR.append(t, msg.effort[ri])
+
+    def cb_joint_tracking(self, msg: JointState):
+        if not isfinite(self.sim_time):
+            return
+
+        idx = {n: i for i, n in enumerate(msg.name)}
+        ji = idx.get(self.tracked_joint, None)
+        if ji is None:
+            return
+
+        t = self.sim_time
+        if ji < len(msg.position):
+            self.joint_pos.append(t, msg.position[ji])
+        if ji < len(msg.velocity):
+            self.joint_vel.append(t, msg.velocity[ji])
 
     # ===================== UI (Modern) =====================
     def _init_ui(self):
@@ -373,7 +395,7 @@ class ReflexControlLabUI(Node):
         side_wrap.addWidget(pid)
         side_wrap.addStretch(1)
 
-        # ----- Build 2x2 plots -----
+        # ----- Build plots -----
         grid_alpha = 0.20
 
         self.p_balance = self.plots_widget.addPlot(title="Balance: theta / theta_set / u (0-centered)")
@@ -381,8 +403,12 @@ class ReflexControlLabUI(Node):
         self.plots_widget.nextRow()
         self.p_wheels = self.plots_widget.addPlot(title="Wheels: wL / wR (rad/s)")
         self.p_torque = self.plots_widget.addPlot(title="Torque: tauL / tauR (Nm)")
+        self.plots_widget.nextRow()
+        self.p_joint = self.plots_widget.addPlot(
+            title=f"Joint: {self.tracked_joint} position / velocity"
+        )
 
-        self.all_plots = [self.p_balance, self.p_velocity, self.p_wheels, self.p_torque]
+        self.all_plots = [self.p_balance, self.p_velocity, self.p_wheels, self.p_torque, self.p_joint]
 
         for p in self.all_plots:
             p.showGrid(x=True, y=True, alpha=grid_alpha)
@@ -416,6 +442,16 @@ class ReflexControlLabUI(Node):
         self.p_torque.addLegend(offset=(10, 10))
         self.c_tauL = self.p_torque.plot(pen=pg.mkPen((150, 200, 255), width=2), name='tauL')
         self.c_tauR = self.p_torque.plot(pen=pg.mkPen((255, 160, 0), width=2), name='tauR')
+
+        self.p_joint.addLegend(offset=(10, 10))
+        self.c_joint_pos = self.p_joint.plot(
+            pen=pg.mkPen((120, 255, 160), width=2),
+            name=f'{self.tracked_joint}_pos'
+        )
+        self.c_joint_vel = self.p_joint.plot(
+            pen=pg.mkPen((255, 120, 200), width=2),
+            name=f'{self.tracked_joint}_vel'
+        )
 
         # Optional command plot (hidden by default)
         self.p_cmd = None
@@ -669,6 +705,8 @@ class ReflexControlLabUI(Node):
 
         self.c_tauL.setData(*self.tauL.data(), connect="finite")
         self.c_tauR.setData(*self.tauR.data(), connect="finite")
+        self.c_joint_pos.setData(*self.joint_pos.data(), connect="finite")
+        self.c_joint_vel.setData(*self.joint_vel.data(), connect="finite")
 
         if self.chk_show_cmd.isChecked() and self.p_cmd is not None:
             self.c_wL_cmd.setData(*self.wL_cmd.data(), connect="finite")
