@@ -37,7 +37,8 @@
       <child link="${prefix}Right_Hip"/>
       <axis xyz="1 0 0"/>
       <!-- NOTE: SolidWorks exported 0/0 limits. Replace with real joint limits. -->
-      <limit lower="-1.5708" upper="1.5708" effort="11.0" velocity="43.98"/>
+      <!-- ! NOTE: Lower limits is set to -360 to 360 to be able to apply offsets -->
+      <limit lower="-3.14159" upper="3.14159" effort="11.0" velocity="43.98"/>
     </joint>
 
     <!-- Right Knee link -->
@@ -74,7 +75,8 @@
       <child link="${prefix}Right_Knee"/>
       <!-- ! NOTE: SolidWorks exported axis="0 0 0" (invalid). Fix axis based on your hinge. -->
       <axis xyz="1 0 0"/>
-      <limit lower="-1.5708" upper="1.5708" effort="11.0" velocity="43.98"/>
+      <!-- ! NOTE: Lower limits is set to -360 to 360 to be able to apply offsets -->
+      <limit lower="-3.14159" upper="3.14159" effort="11.0" velocity="43.98"/>
     </joint>
 
     <!-- Right Wheel link -->
