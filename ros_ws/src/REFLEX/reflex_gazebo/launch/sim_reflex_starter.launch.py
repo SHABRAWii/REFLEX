@@ -93,6 +93,14 @@ def generate_launch_description():
                 '--switch-timeout', '60.0'],
             output='screen'
         ),
+        ExecuteProcess(
+            cmd=['ros2', 'run', 'controller_manager', 'spawner',
+                'diff_drive_controller', '-c', '/controller_manager',  # <--- UPDATED
+                '--controller-manager-timeout', '120.0',
+                '--service-call-timeout', '120.0',
+                '--switch-timeout', '60.0'],
+            output='screen'
+        ),
     ]
 
     slow_physics = TimerAction(
