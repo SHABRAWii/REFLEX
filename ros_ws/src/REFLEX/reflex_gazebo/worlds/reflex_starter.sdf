@@ -109,14 +109,14 @@
       <name>reflex</name>
 
       <!-- Spawn at 0.5 meters  -->
-      <pose>0 0 4.5 0 0 0</pose>
+      <pose>0 0 0.5 0 0.0 0</pose>
     </include>
 
     <!-- Robot World fixation comment to let baselink move with the world--> 
-    <joint name="reflex_to_world" type="fixed">
+    <!-- <joint name="reflex_to_world" type="fixed">
       <parent>world</parent>
       <child>reflex::base_link</child>
-    </joint>
+    </joint> -->
 
   </world>
 </sdf>
