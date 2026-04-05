@@ -65,11 +65,7 @@ class RollStabilizer(Node):
 
         self.get_logger().info("IK Stabilizer Running. Publishing raw angles to /joint_position_cmd.")
 
-    def imu_callback(self, msg: Imu):
-        q = msg.orientation
-        sinr_cosp = 2.0 * (q.w * q.x + q.y * q.z)
-        cosr_cosp = 1.0 - 2.0 * (q.x * q.x + q.y * q.y)
-        self.current_roll = math.atan2(sinr_cosp, cosr_cosp)
+
 
     def on_imu(self, msg: Imu):
       ox = float(msg.orientation.x)
