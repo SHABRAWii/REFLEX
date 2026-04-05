@@ -85,9 +85,11 @@ class JointVelocityNode(Node):
         # ===== OFFSETS =====
         self.offset = [
             135 / 180 * math.pi, 
-            71.0 / 180 * math.pi, 
+            (180-71) / 180 * math.pi, 
+            0,
             135 / 180 * math.pi, 
-            71.0 / 180 * math.pi
+            (180-71) / 180 * math.pi,
+            0,
         ]
         
         # ===== STATE =====
