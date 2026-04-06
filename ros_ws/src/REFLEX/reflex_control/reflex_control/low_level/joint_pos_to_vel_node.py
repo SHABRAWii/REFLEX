@@ -87,6 +87,7 @@ from rclpy.node import Node
 
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray
+import math
 
 
 def clamp(x, lo, hi):
@@ -104,11 +105,13 @@ class JointPosToVelNode(Node):
             'Right_Hip_Joint',
             'Right_Knee_joint'
         ])
-        self.declare_parameter('kp', 10.0)
+        self.declare_parameter('kp', 6.0)
         self.declare_parameter('ki', 0.0)
-        self.declare_parameter('kd', 0.5)
+        self.declare_parameter('kd', 0.2)
         self.declare_parameter('i_max', 1.0)
         self.declare_parameter('vel_limit', 10.0)
+        
+        self.declare_parameter('home_position', [2.35619, 1.9024, 2.35619, 1.9024])
 
         self.joint_names = self.get_parameter('joint_names').value
         self.kp = float(self.get_parameter('kp').value)
@@ -120,13 +123,13 @@ class JointPosToVelNode(Node):
         self.n = len(self.joint_names)
 
         # ===== STATE =====
-        self.q = [0.0] * self.n
+        self.q = list(self.get_parameter('home_position').value)
         self.qdot = [0.0] * self.n
-        self.q_des = [0.0] * self.n
+        self.q_des = list(self.get_parameter('home_position').value)
         self.i_term = [0.0] * self.n
 
         self.have_state = False
-        self.have_cmd = False
+        self.have_cmd = True
         self.last_time = self.get_clock().now()
 
         # ===== SUB =====
@@ -173,6 +176,9 @@ class JointPosToVelNode(Node):
             idx = name_to_idx[jn]
             self.q[i] = msg.position[idx] if idx < len(msg.position) else 0.0
             self.qdot[i] = msg.velocity[idx] if idx < len(msg.velocity) else 0.0
+            # if i in (1, 3):
+            #     self.q[i] = math.pi - self.q[i]
+            
             # self.get_logger().info(f"Joint {jn}: q={self.q[i]}, qdot={self.qdot[i]}")
         self.have_state = True
         self.compute()
