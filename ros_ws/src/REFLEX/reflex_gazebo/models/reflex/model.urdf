@@ -233,6 +233,8 @@
   <!-- IMU sensor on base_link (Gazebo Sim / Harmonic) -->
   <gazebo reference="base_link">
     <sensor name="imu" type="imu">
+      <!-- Rotate imu -90 degree around z-axis -->
+      <pose>0 0 0 0 0 -1.570796327</pose>
       <always_on>true</always_on>
       <update_rate>200</update_rate>
       <visualize>false</visualize>
