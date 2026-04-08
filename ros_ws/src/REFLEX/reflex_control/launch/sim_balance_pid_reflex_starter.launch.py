@@ -73,7 +73,7 @@ def generate_launch_description():
             'right_joint': 'Right_Wheel_Joint',
             'wheel_radius': 0.06,
             'wheel_separation': 0.30,
-            'balance_axis': 'roll',
+            'balance_axis': 'pitch',
             'theta_max': 1.5,
             'w_max': 3000.0,
             'inner_rate_hz': 250.0,
