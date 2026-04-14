@@ -152,6 +152,72 @@ reflex_build() {
   fi
 }
 
+reflex_killall() {
+  local -a patterns=(
+    "gz sim"
+    "ruby .*gz"
+    "ros2 launch"
+    "ros2 run ros_gz_bridge parameter_bridge"
+    "ros2 run controller_manager spawner"
+    "robot_state_publisher"
+    "controller_manager"
+    "ros_gz_sim create"
+    "reflex_balance_pid"
+    "reflex_pid_tuner"
+    "reflex_debug_plotter"
+    "reflex_status_dashboard"
+    "reflex_status_dashboard_ui"
+    "joint_velocity_node"
+    "joint_pos_to_vel_node"
+    "stance_controller"
+    "reflex_sim_bootstrapper"
+    "reset_manager"
+    "reflex_reset_on_world_reset"
+    "disturbance_inspector"
+  )
+
+  local -a matched_pids=()
+  local pat pid
+
+  _reflex_info "Looking for old Gazebo / ROS / REFLEX processes..."
+
+  for pat in "${patterns[@]}"; do
+    while IFS= read -r pid; do
+      [[ -z "$pid" ]] && continue
+      if [[ ! " ${matched_pids[*]} " =~ " ${pid} " ]]; then
+        matched_pids+=("$pid")
+      fi
+    done < <(pgrep -f "$pat" 2>/dev/null || true)
+  done
+
+  if [[ ${#matched_pids[@]} -eq 0 ]]; then
+    _reflex_ok "No matching Gazebo / ROS / REFLEX processes found."
+    return 0
+  fi
+
+  _reflex_warn "Sending SIGTERM to: ${matched_pids[*]}"
+  kill "${matched_pids[@]}" 2>/dev/null || true
+  sleep 2
+
+  local -a survivors=()
+  for pid in "${matched_pids[@]}"; do
+    if kill -0 "$pid" 2>/dev/null; then
+      survivors+=("$pid")
+    fi
+  done
+
+  if [[ ${#survivors[@]} -gt 0 ]]; then
+    _reflex_warn "Still running after SIGTERM, sending SIGKILL to: ${survivors[*]}"
+    kill -9 "${survivors[@]}" 2>/dev/null || true
+    sleep 1
+  fi
+
+  # Clean up DDS / ROS daemon state that may keep discovery stale.
+  ros2 daemon stop >/dev/null 2>&1 || true
+
+  _reflex_ok "Cleanup finished."
+}
+
 # ----------------------------
 # [4] PID Tuner: Staging Store
 # ----------------------------
