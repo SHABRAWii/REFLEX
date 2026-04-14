@@ -5,6 +5,8 @@
 <!-- =================================================================================== -->
 <robot name="reflex">
   <!-- <xacro:include filename="$(find reflex_descriptions)/urdf/components/sensors.xacro" /> TODO: Add sensors -->
+  <!-- Build robot -->
+  <link name="base_root"/>
   <link name="base_link">
     <inertial>
       <origin rpy="0 0 0" xyz="2.92339840704624E-06 0.195675441175354 -0.0667288023592446"/>
@@ -28,6 +30,11 @@
       </geometry>
     </collision>
   </link>
+  <joint name="base_root_joint" type="fixed">
+    <parent link="base_root"/>
+    <child link="base_link"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
   <!-- Left Hip link -->
   <link name="Left_Hip">
     <inertial>

@@ -12,7 +12,16 @@
   <!-- <xacro:include filename="$(find reflex_descriptions)/urdf/components/sensors.xacro" /> TODO: Add sensors -->
 
   <!-- Build robot -->
+  <link name="${prefix}base_root"/>
+
   <xacro:reflex_base prefix="${prefix}" />
+
+  <joint name="${prefix}base_root_joint" type="fixed">
+    <parent link="${prefix}base_root" />
+    <child link="${prefix}base_link" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
+
   <xacro:reflex_left_leg prefix="${prefix}" parent="${prefix}base_link" />
   <xacro:reflex_right_leg prefix="${prefix}" parent="${prefix}base_link" />
   <!-- <xacro:reflex_sensors prefix="${prefix}" parent="${prefix}base_link" /> TODO: Add Sensors -->

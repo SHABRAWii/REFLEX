@@ -1,19 +1,19 @@
 <sdf version='1.11'>
   <model name='reflex'>
-    <link name='base_link'>
+    <link name='base_root'>
       <inertial>
-        <pose>2.92339840704624e-06 0.19567544117535399 -0.066728802359244596 0 0 0</pose>
+        <pose>2.92339840704624e-06 0.19567544117535399 -0.06672880235924461 0 0 0</pose>
         <mass>4.45917765815169</mass>
         <inertia>
-          <ixx>0.047576240288036503</ixx>
-          <ixy>3.0402832758819899e-06</ixy>
+          <ixx>0.047576240288036448</ixx>
+          <ixy>3.0402832758819912e-06</ixy>
           <ixz>-2.9055288386289899e-06</ixz>
-          <iyy>0.025942486539569699</iyy>
-          <iyz>-5.4637214022435901e-05</iyz>
-          <izz>0.052322304650113699</izz>
+          <iyy>0.025942486539569692</iyy>
+          <iyz>-5.4637214022455749e-05</iyz>
+          <izz>0.052322304650113637</izz>
         </inertia>
       </inertial>
-      <collision name='base_link_collision'>
+      <collision name='base_root_fixed_joint_lump__base_link_collision'>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
@@ -30,7 +30,7 @@
           </friction>
         </surface>
       </collision>
-      <visual name='base_link_visual'>
+      <visual name='base_root_fixed_joint_lump__base_link_visual'>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
           <mesh>
@@ -44,7 +44,6 @@
         </material>
       </visual>
       <sensor name='imu' type='imu'>
-        <pose>0 0 0 0 0 -1.5707963270000003</pose>
         <always_on>true</always_on>
         <update_rate>200</update_rate>
         <visualize>false</visualize>
@@ -91,11 +90,12 @@
             </z>
           </linear_acceleration>
         </imu>
+        <pose>0 0 0 0 0 -1.5708</pose>
       </sensor>
     </link>
     <joint name='Left_Hip_joint' type='revolute'>
-      <pose relative_to='base_link'>0.2064 0.19 -0.070000000000000007 0.78540000000000021 -4.2351647362715017e-22 -3.1415853071795872</pose>
-      <parent>base_link</parent>
+      <pose relative_to='base_root'>0.2064 0.19 -0.070000000000000007 0.78540000000000021 -4.2351647362715017e-22 -3.1415853071795872</pose>
+      <parent>base_root</parent>
       <child>Left_Hip</child>
       <axis>
         <xyz>-1 0 0</xyz>
@@ -268,8 +268,8 @@
       </visual>
     </link>
     <joint name='Right_Hip_Joint' type='revolute'>
-      <pose relative_to='base_link'>-0.1089 0.19 -0.070000000000000007 -2.8008999999999999 0 0</pose>
-      <parent>base_link</parent>
+      <pose relative_to='base_root'>-0.1089 0.19 -0.070000000000000007 -2.8008999999999999 0 0</pose>
+      <parent>base_root</parent>
       <child>Right_Hip</child>
       <axis>
         <xyz>1 0 0</xyz>
@@ -456,5 +456,11 @@
       <static_update_frequency>1</static_update_frequency>
     </plugin>
     <plugin name='gz::sim::systems::JointStatePublisher' filename='gz-sim-joint-state-publisher-system'/>
+    <frame name='base_root_joint' attached_to='base_root'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='base_link' attached_to='base_root_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
   </model>
 </sdf>
