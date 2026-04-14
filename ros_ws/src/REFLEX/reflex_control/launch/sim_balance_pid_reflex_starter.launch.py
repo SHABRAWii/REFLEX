@@ -61,7 +61,24 @@ def generate_launch_description():
             'restore_factor_delay': restore_factor_delay,
         }.items()
     )
-
+    low_level_joint_velocity = Node(
+        package='reflex_control',
+        executable='joint_velocity_node',
+        name='joint_velocity_node',
+        output='screen',
+        parameters=[{
+            'use_sim_time': True
+        }]
+    )
+    low_level_joint_pos_to_vel = Node(
+        package='reflex_control',
+        executable='joint_pos_to_vel_node',
+        name='joint_pos_to_vel_node',
+        output='screen',
+        parameters=[{
+            'use_sim_time': True
+        }]
+    )
     controller = Node(
         package='reflex_control',
         executable='reflex_balance_pid',
@@ -156,6 +173,8 @@ def generate_launch_description():
 
         # ---- Start everything ----
         plotter,
+        low_level_joint_velocity,
+        low_level_joint_pos_to_vel,
         sim,
         controller,
         tuner,
